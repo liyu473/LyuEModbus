@@ -17,17 +17,17 @@ public class ModbusTcpSlave : IDisposable
     /// <summary>
     /// 从站ID
     /// </summary>
-    public byte SlaveId { get; private set; } = 1;
+    public byte SlaveId { get; internal set; } = 1;
 
     /// <summary>
     /// 监听地址
     /// </summary>
-    public string IpAddress { get; private set; } = "0.0.0.0";
+    public string IpAddress { get; internal set; } = "0.0.0.0";
 
     /// <summary>
     /// 监听端口
     /// </summary>
-    public int Port { get; private set; } = 502;
+    public int Port { get; internal set; } = 502;
 
     /// <summary>
     /// 是否正在运行

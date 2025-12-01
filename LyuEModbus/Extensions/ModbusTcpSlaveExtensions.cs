@@ -12,7 +12,7 @@ public static class ModbusTcpSlaveExtensions
     /// </summary>
     public static ModbusTcpSlave WithAddress(this ModbusTcpSlave slave, string ipAddress)
     {
-        typeof(ModbusTcpSlave).GetProperty("IpAddress")?.SetValue(slave, ipAddress);
+        slave.IpAddress = ipAddress;
         return slave;
     }
 
@@ -21,8 +21,8 @@ public static class ModbusTcpSlaveExtensions
     /// </summary>
     public static ModbusTcpSlave WithAddress(this ModbusTcpSlave slave, string ipAddress, int port)
     {
-        typeof(ModbusTcpSlave).GetProperty("IpAddress")?.SetValue(slave, ipAddress);
-        typeof(ModbusTcpSlave).GetProperty("Port")?.SetValue(slave, port);
+        slave.IpAddress = ipAddress;
+        slave.Port = port;
         return slave;
     }
 
@@ -31,7 +31,7 @@ public static class ModbusTcpSlaveExtensions
     /// </summary>
     public static ModbusTcpSlave WithPort(this ModbusTcpSlave slave, int port)
     {
-        typeof(ModbusTcpSlave).GetProperty("Port")?.SetValue(slave, port);
+        slave.Port = port;
         return slave;
     }
 
@@ -40,7 +40,7 @@ public static class ModbusTcpSlaveExtensions
     /// </summary>
     public static ModbusTcpSlave WithSlaveId(this ModbusTcpSlave slave, byte slaveId)
     {
-        typeof(ModbusTcpSlave).GetProperty("SlaveId")?.SetValue(slave, slaveId);
+        slave.SlaveId = slaveId;
         return slave;
     }
 

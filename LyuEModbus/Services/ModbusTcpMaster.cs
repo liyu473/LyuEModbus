@@ -15,27 +15,27 @@ public class ModbusTcpMaster : IDisposable
     /// <summary>
     /// 从站IP地址
     /// </summary>
-    public string IpAddress { get; private set; } = "127.0.0.1";
+    public string IpAddress { get; internal set; } = "127.0.0.1";
 
     /// <summary>
     /// 端口号
     /// </summary>
-    public int Port { get; private set; } = 502;
+    public int Port { get; internal set; } = 502;
 
     /// <summary>
     /// 从站ID
     /// </summary>
-    public byte SlaveId { get; private set; } = 1;
+    public byte SlaveId { get; internal set; } = 1;
 
     /// <summary>
     /// 读取超时（毫秒）
     /// </summary>
-    public int ReadTimeout { get; private set; } = 3000;
+    public int ReadTimeout { get; internal set; } = 3000;
 
     /// <summary>
     /// 写入超时（毫秒）
     /// </summary>
-    public int WriteTimeout { get; private set; } = 3000;
+    public int WriteTimeout { get; internal set; } = 3000;
 
     /// <summary>
     /// 是否已连接

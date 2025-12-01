@@ -12,7 +12,7 @@ public static class ModbusTcpMasterExtensions
     /// </summary>
     public static ModbusTcpMaster WithAddress(this ModbusTcpMaster master, string ipAddress)
     {
-        typeof(ModbusTcpMaster).GetProperty("IpAddress")?.SetValue(master, ipAddress);
+        master.IpAddress = ipAddress;
         return master;
     }
 
@@ -21,8 +21,8 @@ public static class ModbusTcpMasterExtensions
     /// </summary>
     public static ModbusTcpMaster WithAddress(this ModbusTcpMaster master, string ipAddress, int port)
     {
-        typeof(ModbusTcpMaster).GetProperty("IpAddress")?.SetValue(master, ipAddress);
-        typeof(ModbusTcpMaster).GetProperty("Port")?.SetValue(master, port);
+        master.IpAddress = ipAddress;
+        master.Port = port;
         return master;
     }
 
@@ -31,7 +31,7 @@ public static class ModbusTcpMasterExtensions
     /// </summary>
     public static ModbusTcpMaster WithPort(this ModbusTcpMaster master, int port)
     {
-        typeof(ModbusTcpMaster).GetProperty("Port")?.SetValue(master, port);
+        master.Port = port;
         return master;
     }
 
@@ -40,7 +40,7 @@ public static class ModbusTcpMasterExtensions
     /// </summary>
     public static ModbusTcpMaster WithSlaveId(this ModbusTcpMaster master, byte slaveId)
     {
-        typeof(ModbusTcpMaster).GetProperty("SlaveId")?.SetValue(master, slaveId);
+        master.SlaveId = slaveId;
         return master;
     }
 
@@ -49,8 +49,8 @@ public static class ModbusTcpMasterExtensions
     /// </summary>
     public static ModbusTcpMaster WithTimeout(this ModbusTcpMaster master, int readTimeout, int writeTimeout)
     {
-        typeof(ModbusTcpMaster).GetProperty("ReadTimeout")?.SetValue(master, readTimeout);
-        typeof(ModbusTcpMaster).GetProperty("WriteTimeout")?.SetValue(master, writeTimeout);
+        master.ReadTimeout = readTimeout;
+        master.WriteTimeout = writeTimeout;
         return master;
     }
 

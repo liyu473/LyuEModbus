@@ -83,12 +83,11 @@ mc:Ignorable="d">
 										</Grid>
 									</shadui:Card.Header>
 									<shadui:Card.Content>
-										<TextBox Text="{Binding SlaveLog}" 
-										         IsReadOnly="True" 
-										         AcceptsReturn="True"
-										         TextWrapping="Wrap"
-										         Height="200"
-										         Watermark="暂无日志..." />
+										<Border Height="200" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+											<ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="8">
+												<TextBlock Text="{Binding SlaveLog}" TextWrapping="Wrap" />
+											</ScrollViewer>
+										</Border>
 									</shadui:Card.Content>
 								</shadui:Card>
 							</StackPanel>
@@ -188,12 +187,11 @@ mc:Ignorable="d">
 										</Grid>
 									</shadui:Card.Header>
 									<shadui:Card.Content>
-										<TextBox Text="{Binding MasterLog}" 
-										         IsReadOnly="True" 
-										         AcceptsReturn="True"
-										         TextWrapping="Wrap"
-										         Height="200"
-										         Watermark="暂无日志..." />
+										<Border Height="200" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+											<ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="8">
+												<TextBlock Text="{Binding MasterLog}" TextWrapping="Wrap" />
+											</ScrollViewer>
+										</Border>
 									</shadui:Card.Content>
 								</shadui:Card>
 							</StackPanel>

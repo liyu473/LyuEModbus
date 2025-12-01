@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using EModbus.Extensions;
 using EModbus.Model;
 using Extensions;
-using LyuEModbus;
+using LyuEModbus.Services;
 using ShadUI;
 
 namespace EModbus.ViewModels;
@@ -56,7 +56,7 @@ public partial class HomeViewModel : ViewModelBase, INavigable
         try
         {
             _tcpSlave = new ModbusTcpSlave(SlaveSettings.IpAddress, SlaveSettings.Port, SlaveSettings.SlaveId);
-            _tcpSlave.OnLog += msg => SlaveLog = SlaveLog.Append(msg);
+            _tcpSlave.OnLog += msg => SlaveLog = SlaveLog.Append(msg += Environment.NewLine);
             _tcpSlave.OnStatusChanged += running =>
             {
                 IsSlaveRunning = running;
@@ -68,7 +68,7 @@ public partial class HomeViewModel : ViewModelBase, INavigable
         }
         catch (Exception ex)
         {
-            SlaveLog = SlaveLog.Append($"启动失败: {ex.Message}");
+            SlaveLog = SlaveLog.Append($"启动失败: {ex.Message}{Environment.NewLine}");
             _toastManager.ShowToast($"启动失败: {ex.Message}", type: Notification.Error);
         }
     }
@@ -90,7 +90,7 @@ public partial class HomeViewModel : ViewModelBase, INavigable
         }
         catch (Exception ex)
         {
-            SlaveLog = SlaveLog.Append($"停止失败: {ex.Message}");
+            SlaveLog = SlaveLog.Append($"停止失败: {ex.Message}{Environment.NewLine}");
             _toastManager.ShowToast($"停止失败: {ex.Message}", type: Notification.Error);
         }
     }
@@ -150,7 +150,7 @@ public partial class HomeViewModel : ViewModelBase, INavigable
                 MasterSettings.ReadTimeout,
                 MasterSettings.WriteTimeout);
 
-            _tcpMaster.OnLog += msg => MasterLog = MasterLog.Append(msg);
+            _tcpMaster.OnLog += msg => MasterLog = MasterLog.Append(msg+=Environment.NewLine);
             _tcpMaster.OnConnectionChanged += connected =>
             {
                 IsMasterConnected = connected;
@@ -162,7 +162,7 @@ public partial class HomeViewModel : ViewModelBase, INavigable
         }
         catch (Exception ex)
         {
-            MasterLog = MasterLog.Append($"连接失败: {ex.Message}");
+            MasterLog = MasterLog.Append($"连接失败: {ex.Message}{Environment.NewLine}");
             _toastManager.ShowToast($"连接失败: {ex.Message}", type: Notification.Error);
         }
     }
@@ -184,7 +184,7 @@ public partial class HomeViewModel : ViewModelBase, INavigable
         }
         catch (Exception ex)
         {
-            MasterLog = MasterLog.Append($"断开失败: {ex.Message}");
+            MasterLog = MasterLog.Append($"断开失败: {ex.Message}{Environment.NewLine}");
             _toastManager.ShowToast($"断开失败: {ex.Message}", type: Notification.Error);
         }
     }
@@ -206,7 +206,7 @@ public partial class HomeViewModel : ViewModelBase, INavigable
         }
         catch (Exception ex)
         {
-            MasterLog = MasterLog.Append($"读取失败: {ex.Message}");
+            MasterLog = MasterLog.Append($"读取失败: {ex.Message}{Environment.NewLine}");
             _toastManager.ShowToast($"读取失败: {ex.Message}", type: Notification.Error);
         }
     }
@@ -227,7 +227,7 @@ public partial class HomeViewModel : ViewModelBase, INavigable
         }
         catch (Exception ex)
         {
-            MasterLog = MasterLog.Append($"写入失败: {ex.Message}");
+            MasterLog = MasterLog.Append($"写入失败: {ex.Message}{Environment.NewLine}");
             _toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error);
         }
     }

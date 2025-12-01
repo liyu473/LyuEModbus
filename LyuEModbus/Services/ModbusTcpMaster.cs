@@ -1,7 +1,7 @@
 using System.Net.Sockets;
 using NModbus;
 
-namespace LyuEModbus;
+namespace LyuEModbus.Services;
 
 /// <summary>
 /// Modbus TCP 主站封装
@@ -15,27 +15,27 @@ public class ModbusTcpMaster : IDisposable
     /// <summary>
     /// 从站IP地址
     /// </summary>
-    public string IpAddress { get; }
+    public string IpAddress { get; private set; } = "127.0.0.1";
 
     /// <summary>
     /// 端口号
     /// </summary>
-    public int Port { get; }
+    public int Port { get; private set; } = 502;
 
     /// <summary>
     /// 从站ID
     /// </summary>
-    public byte SlaveId { get; set; }
+    public byte SlaveId { get; private set; } = 1;
 
     /// <summary>
     /// 读取超时（毫秒）
     /// </summary>
-    public int ReadTimeout { get; set; }
+    public int ReadTimeout { get; private set; } = 3000;
 
     /// <summary>
     /// 写入超时（毫秒）
     /// </summary>
-    public int WriteTimeout { get; set; }
+    public int WriteTimeout { get; private set; } = 3000;
 
     /// <summary>
     /// 是否已连接
@@ -52,20 +52,12 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public event Action<bool>? OnConnectionChanged;
 
+    private ModbusTcpMaster() { }
+
     /// <summary>
     /// 创建 Modbus TCP 主站
     /// </summary>
-    /// <param name="ipAddress">从站IP地址</param>
-    /// <param name="port">端口号，默认 502</param>
-    /// <param name="slaveId">从站ID，默认 1</param>
-    /// <param name="readTimeout">读取超时，默认 3000ms</param>
-    /// <param name="writeTimeout">写入超时，默认 3000ms</param>
-    public ModbusTcpMaster(
-        string ipAddress = "127.0.0.1",
-        int port = 502,
-        byte slaveId = 1,
-        int readTimeout = 3000,
-        int writeTimeout = 3000)
+    public ModbusTcpMaster(string ipAddress, int port, byte slaveId, int readTimeout = 3000, int writeTimeout = 3000)
     {
         IpAddress = ipAddress;
         Port = port;
@@ -74,15 +66,99 @@ public class ModbusTcpMaster : IDisposable
         WriteTimeout = writeTimeout;
     }
 
+    #region Fluent Builder
+
     /// <summary>
-    /// 连接到从站
+    /// 创建主站构建器
     /// </summary>
-    public async Task ConnectAsync()
+    public static ModbusTcpMaster Create() => new();
+
+    /// <summary>
+    /// 设置目标地址
+    /// </summary>
+    public ModbusTcpMaster WithAddress(string ipAddress)
+    {
+        IpAddress = ipAddress;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置目标地址和端口
+    /// </summary>
+    public ModbusTcpMaster WithAddress(string ipAddress, int port)
+    {
+        IpAddress = ipAddress;
+        Port = port;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置端口
+    /// </summary>
+    public ModbusTcpMaster WithPort(int port)
+    {
+        Port = port;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置从站ID
+    /// </summary>
+    public ModbusTcpMaster WithSlaveId(byte slaveId)
+    {
+        SlaveId = slaveId;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置超时
+    /// </summary>
+    public ModbusTcpMaster WithTimeout(int readTimeout, int writeTimeout)
+    {
+        ReadTimeout = readTimeout;
+        WriteTimeout = writeTimeout;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置超时（读写使用相同值）
+    /// </summary>
+    public ModbusTcpMaster WithTimeout(int timeout)
+    {
+        ReadTimeout = timeout;
+        WriteTimeout = timeout;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置日志回调
+    /// </summary>
+    public ModbusTcpMaster WithLog(Action<string> logHandler)
+    {
+        OnLog += logHandler;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置连接状态变化回调
+    /// </summary>
+    public ModbusTcpMaster WithConnectionChanged(Action<bool> connectionHandler)
+    {
+        OnConnectionChanged += connectionHandler;
+        return this;
+    }
+
+    #endregion
+
+    /// <summary>
+    /// 连接到从站（支持链式调用）
+    /// </summary>
+    public async Task<ModbusTcpMaster> ConnectAsync()
     {
         if (IsConnected)
         {
             Log("已连接");
-            return;
+            return this;
         }
 
         try
@@ -106,6 +182,7 @@ public class ModbusTcpMaster : IDisposable
             Log($"连接失败: {ex.Message}");
             throw;
         }
+        return this;
     }
 
     /// <summary>

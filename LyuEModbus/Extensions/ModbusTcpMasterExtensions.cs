@@ -164,12 +164,48 @@ public static class ModbusTcpMasterExtensions
     }
 
     /// <summary>
-    /// 配置心跳检测（启用并设置间隔）
+    /// 配置心跳检测（启用并设置间隔和回调）
     /// </summary>
-    public static ModbusTcpMaster WithHeartbeat(this ModbusTcpMaster master, int intervalMs)
+    public static ModbusTcpMaster WithHeartbeat(this ModbusTcpMaster master, int intervalMs, Action? onHeartbeat = null)
     {
         master.EnableHeartbeat = true;
         master.HeartbeatInterval = intervalMs;
+        if (onHeartbeat != null)
+        {
+            master.OnHeartbeat += onHeartbeat;
+        }
+        return master;
+    }
+
+    /// <summary>
+    /// 配置心跳检测（启用并设置间隔和异步回调）
+    /// </summary>
+    public static ModbusTcpMaster WithHeartbeatAsync(this ModbusTcpMaster master, int intervalMs, Func<Task>? onHeartbeat = null)
+    {
+        master.EnableHeartbeat = true;
+        master.HeartbeatInterval = intervalMs;
+        if (onHeartbeat != null)
+        {
+            master.OnHeartbeatAsync += onHeartbeat;
+        }
+        return master;
+    }
+
+    /// <summary>
+    /// 设置心跳回调
+    /// </summary>
+    public static ModbusTcpMaster WithOnHeartbeat(this ModbusTcpMaster master, Action heartbeatHandler)
+    {
+        master.OnHeartbeat += heartbeatHandler;
+        return master;
+    }
+
+    /// <summary>
+    /// 设置异步心跳回调
+    /// </summary>
+    public static ModbusTcpMaster WithOnHeartbeatAsync(this ModbusTcpMaster master, Func<Task> heartbeatHandler)
+    {
+        master.OnHeartbeatAsync += heartbeatHandler;
         return master;
     }
 }

@@ -121,6 +121,16 @@ public class ModbusTcpMaster : IDisposable
     public event Func<int, Task>? OnReconnectingAsync;
 
     /// <summary>
+    /// 心跳事件（每隔指定间隔触发一次）
+    /// </summary>
+    public event Action? OnHeartbeat;
+
+    /// <summary>
+    /// 异步心跳事件（每隔指定间隔触发一次）
+    /// </summary>
+    public event Func<Task>? OnHeartbeatAsync;
+
+    /// <summary>
     /// 创建主站构建器
     /// </summary>
     public static ModbusTcpMaster Create() => new();
@@ -248,6 +258,13 @@ public class ModbusTcpMaster : IDisposable
                 try
                 {
                     await Task.Delay(HeartbeatInterval, _heartbeatCts.Token);
+                    
+                    // 触发心跳事件
+                    OnHeartbeat?.Invoke();
+                    if (OnHeartbeatAsync != null)
+                    {
+                        await OnHeartbeatAsync.Invoke();
+                    }
                     
                     if (!CheckConnection())
                     {

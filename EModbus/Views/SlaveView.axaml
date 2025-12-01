@@ -68,7 +68,7 @@
             </shadui:Card.Header>
             <shadui:Card.Content>
                 <DataGrid ItemsSource="{Binding HoldingRegisters}" 
-                          Height="200"
+                          Height="400"
                           AutoGenerateColumns="False"
                           CanUserReorderColumns="False"
                           CanUserResizeColumns="True"
@@ -94,7 +94,7 @@
             </shadui:Card.Header>
             <shadui:Card.Content>
                 <DataGrid ItemsSource="{Binding Coils}" 
-                          Height="150"
+                          Height="400"
                           AutoGenerateColumns="False"
                           CanUserReorderColumns="False"
                           CanUserResizeColumns="True"

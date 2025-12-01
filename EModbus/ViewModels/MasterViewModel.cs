@@ -52,6 +52,22 @@ public partial class MasterViewModel : ViewModelBase
     [ObservableProperty]
     private ushort writeValue = 0;
 
+    // 线圈相关
+    [ObservableProperty]
+    private ushort coilReadAddress = 0;
+
+    [ObservableProperty]
+    private ushort coilReadCount = 10;
+
+    [ObservableProperty]
+    private string coilReadResult = string.Empty;
+
+    [ObservableProperty]
+    private ushort coilWriteAddress = 0;
+
+    [ObservableProperty]
+    private bool coilWriteValue = false;
+
     [ObservableProperty]
     private bool autoReconnect = true;
 
@@ -194,6 +210,49 @@ public partial class MasterViewModel : ViewModelBase
         catch (Exception ex)
         {
             MasterLog = MasterLog.Append($"写入失败: {ex.Message}{Environment.NewLine}");
+            _toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task ReadCoilsAsync()
+    {
+        if (!IsMasterConnected || _tcpMaster == null)
+        {
+            _toastManager.ShowToast("请先连接主站", type: Notification.Warning);
+            return;
+        }
+
+        try
+        {
+            var result = await _tcpMaster.ReadCoilsAsync(CoilReadAddress, CoilReadCount);
+            CoilReadResult = string.Join(", ", result);
+            _toastManager.ShowToast("读取线圈成功", type: Notification.Success);
+        }
+        catch (Exception ex)
+        {
+            MasterLog = MasterLog.Append($"读取线圈失败: {ex.Message}{Environment.NewLine}");
+            _toastManager.ShowToast($"读取失败: {ex.Message}", type: Notification.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task WriteSingleCoilAsync()
+    {
+        if (!IsMasterConnected || _tcpMaster == null)
+        {
+            _toastManager.ShowToast("请先连接主站", type: Notification.Warning);
+            return;
+        }
+
+        try
+        {
+            await _tcpMaster.WriteSingleCoilAsync(CoilWriteAddress, CoilWriteValue);
+            _toastManager.ShowToast($"写入线圈成功: {CoilWriteValue}", type: Notification.Success);
+        }
+        catch (Exception ex)
+        {
+            MasterLog = MasterLog.Append($"写入线圈失败: {ex.Message}{Environment.NewLine}");
             _toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error);
         }
     }

@@ -31,21 +31,32 @@
                     <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MasterSettings.SlaveId}" Classes="Muted" Margin="0,8,0,0" />
 
                     <TextBlock Grid.Row="3" Grid.Column="0" Text="连接状态" VerticalAlignment="Center" Margin="0,8,0,0" />
-                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MasterStatus}" 
-                               Classes.Success="{Binding IsMasterConnected}"
-                               Classes.Muted="{Binding !IsMasterConnected}"
-                               Margin="0,8,0,0" />
+                    <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                        <TextBlock Text="{Binding MasterStatus}" 
+                                   Classes.Success="{Binding IsMasterConnected}"
+                                   Classes.Warning="{Binding IsReconnecting}"
+                                   Classes.Muted="{Binding !IsMasterConnected}" />
+                    </StackPanel>
                 </Grid>
             </shadui:Card.Content>
             <shadui:Card.Footer>
-                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-                    <Button Content="连接" Classes="Primary" 
-                            Command="{Binding ConnectMasterCommand}" 
-                            IsEnabled="{Binding !IsMasterConnected}" />
-                    <Button Content="断开" Classes="Destructive" 
-                            Command="{Binding DisconnectMasterCommand}" 
-                            IsEnabled="{Binding IsMasterConnected}" />
-                </StackPanel>
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <CheckBox IsChecked="{Binding AutoReconnect}" Content="自动重连" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                        <Button Content="停止重连" Classes="Outline" 
+                                Command="{Binding StopReconnectCommand}" 
+                                IsVisible="{Binding IsReconnecting}" />
+                        <Button Content="连接" Classes="Primary" 
+                                Command="{Binding ConnectMasterCommand}" 
+                                IsEnabled="{Binding !IsMasterConnected}" 
+                                IsVisible="{Binding !IsReconnecting}" />
+                        <Button Content="断开" Classes="Destructive" 
+                                Command="{Binding DisconnectMasterCommand}" 
+                                IsEnabled="{Binding IsMasterConnected}" />
+                    </StackPanel>
+                </Grid>
             </shadui:Card.Footer>
         </shadui:Card>
 

@@ -13,6 +13,8 @@ public class ModbusTcpSlave : IDisposable
     private IModbusSlave? _slave;
     private CancellationTokenSource? _cts;
     private bool _disposed;
+    private ushort[]? _lastHoldingValues;
+    private bool[]? _lastCoilValues;
 
     /// <summary>
     /// 从站ID
@@ -35,6 +37,21 @@ public class ModbusTcpSlave : IDisposable
     public bool IsRunning { get; private set; }
 
     /// <summary>
+    /// 初始化保持寄存器数量
+    /// </summary>
+    public ushort InitHoldingRegisterCount { get; internal set; } = 100;
+
+    /// <summary>
+    /// 初始化线圈数量
+    /// </summary>
+    public ushort InitCoilCount { get; internal set; } = 100;
+
+    /// <summary>
+    /// 变化检测间隔（毫秒）
+    /// </summary>
+    public int ChangeDetectionInterval { get; internal set; } = 100;
+
+    /// <summary>
     /// 从站数据存储
     /// </summary>
     public ISlaveDataStore? DataStore => _slave?.DataStore;
@@ -50,11 +67,18 @@ public class ModbusTcpSlave : IDisposable
     public event Action<bool>? OnStatusChanged;
 
     /// <summary>
+    /// 寄存器值被修改事件 (地址, 旧值, 新值)
+    /// </summary>
+    public event Action<ushort, ushort, ushort>? OnHoldingRegisterWritten;
+
+    /// <summary>
+    /// 线圈值被修改事件 (地址, 值)
+    /// </summary>
+    public event Action<ushort, bool>? OnCoilWritten;
+
+    /// <summary>
     /// 创建 Modbus TCP 从站
     /// </summary>
-    /// <param name="ipAddress">监听地址，默认 0.0.0.0</param>
-    /// <param name="port">端口号，默认 502</param>
-    /// <param name="slaveId">从站ID，默认 1</param>
     public ModbusTcpSlave(string ipAddress = "0.0.0.0", int port = 502, byte slaveId = 1)
     {
         IpAddress = ipAddress;
@@ -68,7 +92,7 @@ public class ModbusTcpSlave : IDisposable
     public static ModbusTcpSlave Create() => new();
 
     /// <summary>
-    /// 启动从站（支持链式调用）
+    /// 启动从站
     /// </summary>
     public async Task<ModbusTcpSlave> StartAsync()
     {
@@ -90,6 +114,9 @@ public class ModbusTcpSlave : IDisposable
             _slave = factory.CreateSlave(SlaveId);
             _slaveNetwork.AddSlave(_slave);
 
+            // 初始化模拟数据
+            InitializeSimulationData();
+
             _cts = new CancellationTokenSource();
 
             // 后台运行监听
@@ -109,6 +136,9 @@ public class ModbusTcpSlave : IDisposable
                 }
             });
 
+            // 监控数据变化
+            _ = Task.Run(MonitorDataChangesAsync);
+
             IsRunning = true;
             OnStatusChanged?.Invoke(true);
             Log($"从站已启动 - {IpAddress}:{Port}, SlaveId: {SlaveId}");
@@ -119,6 +149,93 @@ public class ModbusTcpSlave : IDisposable
             throw;
         }
         return this;
+    }
+
+    /// <summary>
+    /// 初始化模拟数据
+    /// </summary>
+    private void InitializeSimulationData()
+    {
+        if (_slave?.DataStore == null) return;
+
+        // 初始化保持寄存器
+        _lastHoldingValues = new ushort[InitHoldingRegisterCount];
+        for (int i = 0; i < _lastHoldingValues.Length; i++)
+        {
+            _lastHoldingValues[i] = (ushort)(i * 10);
+        }
+        _slave.DataStore.HoldingRegisters.WritePoints(0, _lastHoldingValues);
+
+        // 初始化线圈
+        _lastCoilValues = new bool[InitCoilCount];
+        for (int i = 0; i < _lastCoilValues.Length; i++)
+        {
+            _lastCoilValues[i] = i % 2 == 0;
+        }
+        _slave.DataStore.CoilDiscretes.WritePoints(0, _lastCoilValues);
+
+        Log($"已初始化模拟数据: {InitHoldingRegisterCount}个保持寄存器, {InitCoilCount}个线圈");
+    }
+
+    /// <summary>
+    /// 监控数据变化（轮询方式）
+    /// </summary>
+    private async Task MonitorDataChangesAsync()
+    {
+        while (!_cts?.Token.IsCancellationRequested ?? false)
+        {
+            try
+            {
+                await Task.Delay(ChangeDetectionInterval, _cts.Token);
+                DetectChanges();
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                Log($"监控异常: {ex.Message}");
+            }
+        }
+    }
+
+    private void DetectChanges()
+    {
+        if (_slave?.DataStore == null || _lastHoldingValues == null || _lastCoilValues == null) return;
+
+        // 检测保持寄存器变化
+        var currentHolding = _slave.DataStore.HoldingRegisters.ReadPoints(0, (ushort)_lastHoldingValues.Length);
+        for (int i = 0; i < currentHolding.Length; i++)
+        {
+            if (currentHolding[i] != _lastHoldingValues[i])
+            {
+                var address = (ushort)i;
+                var oldValue = _lastHoldingValues[i];
+                var newValue = currentHolding[i];
+                
+                Log($"保持寄存器被修改: 地址={address}, 旧值={oldValue}, 新值={newValue}");
+                OnHoldingRegisterWritten?.Invoke(address, oldValue, newValue);
+                
+                _lastHoldingValues[i] = newValue;
+            }
+        }
+
+        // 检测线圈变化
+        var currentCoils = _slave.DataStore.CoilDiscretes.ReadPoints(0, (ushort)_lastCoilValues.Length);
+        for (int i = 0; i < currentCoils.Length; i++)
+        {
+            if (currentCoils[i] != _lastCoilValues[i])
+            {
+                var address = (ushort)i;
+                var value = currentCoils[i];
+                
+                Log($"线圈被修改: 地址={address}, 值={value}");
+                OnCoilWritten?.Invoke(address, value);
+                
+                _lastCoilValues[i] = value;
+            }
+        }
     }
 
     /// <summary>
@@ -142,6 +259,8 @@ public class ModbusTcpSlave : IDisposable
             _slaveNetwork = null;
             _slave = null;
             _listener = null;
+            _lastHoldingValues = null;
+            _lastCoilValues = null;
 
             IsRunning = false;
             OnStatusChanged?.Invoke(false);
@@ -159,8 +278,11 @@ public class ModbusTcpSlave : IDisposable
     /// </summary>
     public void SetCoil(ushort address, bool value)
     {
-        var dataStore = _slave?.DataStore;
-        dataStore?.CoilDiscretes.WritePoints(address, new[] { value });
+        _slave?.DataStore?.CoilDiscretes.WritePoints(address, new[] { value });
+        if (_lastCoilValues != null && address < _lastCoilValues.Length)
+        {
+            _lastCoilValues[address] = value;
+        }
     }
 
     /// <summary>
@@ -168,8 +290,11 @@ public class ModbusTcpSlave : IDisposable
     /// </summary>
     public void SetHoldingRegister(ushort address, ushort value)
     {
-        var dataStore = _slave?.DataStore;
-        dataStore?.HoldingRegisters.WritePoints(address, new[] { value });
+        _slave?.DataStore?.HoldingRegisters.WritePoints(address, new[] { value });
+        if (_lastHoldingValues != null && address < _lastHoldingValues.Length)
+        {
+            _lastHoldingValues[address] = value;
+        }
     }
 
     /// <summary>
@@ -177,8 +302,14 @@ public class ModbusTcpSlave : IDisposable
     /// </summary>
     public void SetHoldingRegisters(ushort startAddress, ushort[] values)
     {
-        var dataStore = _slave?.DataStore;
-        dataStore?.HoldingRegisters.WritePoints(startAddress, values);
+        _slave?.DataStore?.HoldingRegisters.WritePoints(startAddress, values);
+        if (_lastHoldingValues != null)
+        {
+            for (int i = 0; i < values.Length && startAddress + i < _lastHoldingValues.Length; i++)
+            {
+                _lastHoldingValues[startAddress + i] = values[i];
+            }
+        }
     }
 
     /// <summary>
@@ -186,8 +317,7 @@ public class ModbusTcpSlave : IDisposable
     /// </summary>
     public ushort[]? ReadHoldingRegisters(ushort startAddress, ushort count)
     {
-        var dataStore = _slave?.DataStore;
-        return dataStore?.HoldingRegisters.ReadPoints(startAddress, count);
+        return _slave?.DataStore?.HoldingRegisters.ReadPoints(startAddress, count);
     }
 
     private void Log(string message)

@@ -61,4 +61,41 @@ public static class ModbusTcpSlaveExtensions
         slave.OnStatusChanged += statusHandler;
         return slave;
     }
+
+    /// <summary>
+    /// 设置初始化保持寄存器数量
+    /// </summary>
+    public static ModbusTcpSlave WithInitHoldingRegisters(this ModbusTcpSlave slave, ushort count)
+    {
+        slave.InitHoldingRegisterCount = count;
+        return slave;
+    }
+
+    /// <summary>
+    /// 设置初始化线圈数量
+    /// </summary>
+    public static ModbusTcpSlave WithInitCoils(this ModbusTcpSlave slave, ushort count)
+    {
+        slave.InitCoilCount = count;
+        return slave;
+    }
+
+    /// <summary>
+    /// 设置保持寄存器写入回调
+    /// </summary>
+    public static ModbusTcpSlave WithHoldingRegisterWritten(this ModbusTcpSlave slave, Action<ushort, ushort, ushort> handler)
+    {
+        slave.OnHoldingRegisterWritten += handler;
+        return slave;
+    }
+
+    /// <summary>
+    /// 设置线圈写入回调
+    /// </summary>
+    public static ModbusTcpSlave WithCoilWritten(this ModbusTcpSlave slave, Action<ushort, bool> handler)
+    {
+        slave.OnCoilWritten += handler;
+        return slave;
+    }
+
 }

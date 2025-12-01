@@ -11,6 +11,8 @@ public class ModbusTcpMaster : IDisposable
     private TcpClient? _client;
     private IModbusMaster? _master;
     private bool _disposed;
+    private CancellationTokenSource? _reconnectCts;
+    private bool _isReconnecting;
 
     /// <summary>
     /// 从站IP地址
@@ -38,9 +40,29 @@ public class ModbusTcpMaster : IDisposable
     public int WriteTimeout { get; internal set; } = 3000;
 
     /// <summary>
+    /// 是否启用自动重连
+    /// </summary>
+    public bool AutoReconnect { get; internal set; } = false;
+
+    /// <summary>
+    /// 重连间隔（毫秒）
+    /// </summary>
+    public int ReconnectInterval { get; internal set; } = 5000;
+
+    /// <summary>
+    /// 最大重连次数（0表示无限）
+    /// </summary>
+    public int MaxReconnectAttempts { get; internal set; } = 0;
+
+    /// <summary>
     /// 是否已连接
     /// </summary>
     public bool IsConnected => _client?.Connected ?? false;
+
+    /// <summary>
+    /// 是否正在重连
+    /// </summary>
+    public bool IsReconnecting => _isReconnecting;
 
     /// <summary>
     /// 日志事件
@@ -51,6 +73,11 @@ public class ModbusTcpMaster : IDisposable
     /// 连接状态变化事件
     /// </summary>
     public event Action<bool>? OnConnectionChanged;
+
+    /// <summary>
+    /// 重连事件 (当前重连次数)
+    /// </summary>
+    public event Action<int>? OnReconnecting;
 
     /// <summary>
     /// 创建 Modbus TCP 主站
@@ -70,7 +97,7 @@ public class ModbusTcpMaster : IDisposable
     public static ModbusTcpMaster Create() => new();
 
     /// <summary>
-    /// 连接到从站（支持链式调用）
+    /// 连接到从站
     /// </summary>
     public async Task<ModbusTcpMaster> ConnectAsync()
     {
@@ -80,6 +107,12 @@ public class ModbusTcpMaster : IDisposable
             return this;
         }
 
+        await ConnectInternalAsync();
+        return this;
+    }
+
+    private async Task ConnectInternalAsync()
+    {
         try
         {
             _client = new TcpClient();
@@ -93,6 +126,7 @@ public class ModbusTcpMaster : IDisposable
             _master.Transport.ReadTimeout = ReadTimeout;
             _master.Transport.WriteTimeout = WriteTimeout;
 
+            _isReconnecting = false;
             OnConnectionChanged?.Invoke(true);
             Log($"已连接到 {IpAddress}:{Port}");
         }
@@ -101,7 +135,6 @@ public class ModbusTcpMaster : IDisposable
             Log($"连接失败: {ex.Message}");
             throw;
         }
-        return this;
     }
 
     /// <summary>
@@ -109,7 +142,9 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public void Disconnect()
     {
-        if (!IsConnected)
+        StopReconnect();
+
+        if (!IsConnected && _client == null)
         {
             Log("未连接");
             return;
@@ -132,6 +167,89 @@ public class ModbusTcpMaster : IDisposable
         }
     }
 
+    /// <summary>
+    /// 停止重连
+    /// </summary>
+    public void StopReconnect()
+    {
+        _reconnectCts?.Cancel();
+        _reconnectCts = null;
+        _isReconnecting = false;
+    }
+
+    /// <summary>
+    /// 启动自动重连
+    /// </summary>
+    private async Task StartReconnectAsync()
+    {
+        if (!AutoReconnect || _isReconnecting) return;
+
+        _isReconnecting = true;
+        _reconnectCts = new CancellationTokenSource();
+        var attempts = 0;
+
+        Log("开始自动重连...");
+
+        while (!_reconnectCts.Token.IsCancellationRequested)
+        {
+            attempts++;
+            OnReconnecting?.Invoke(attempts);
+            Log($"重连尝试 {attempts}/{(MaxReconnectAttempts == 0 ? "∞" : MaxReconnectAttempts.ToString())}");
+
+            try
+            {
+                await ConnectInternalAsync();
+                Log("重连成功");
+                return;
+            }
+            catch
+            {
+                if (MaxReconnectAttempts > 0 && attempts >= MaxReconnectAttempts)
+                {
+                    Log($"已达到最大重连次数 {MaxReconnectAttempts}，停止重连");
+                    _isReconnecting = false;
+                    return;
+                }
+
+                try
+                {
+                    await Task.Delay(ReconnectInterval, _reconnectCts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+            }
+        }
+
+        _isReconnecting = false;
+    }
+
+    /// <summary>
+    /// 检查连接并尝试重连
+    /// </summary>
+    private async Task<bool> EnsureConnectedAsync()
+    {
+        if (IsConnected && _master != null) return true;
+
+        if (AutoReconnect && !_isReconnecting)
+        {
+            OnConnectionChanged?.Invoke(false);
+            Log("连接已断开，尝试重连...");
+            
+            // 清理旧连接
+            _master?.Dispose();
+            _client?.Close();
+            _master = null;
+            _client = null;
+
+            await StartReconnectAsync();
+            return IsConnected;
+        }
+
+        return false;
+    }
+
     #region 读取操作
 
     /// <summary>
@@ -139,11 +257,21 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public async Task<bool[]> ReadCoilsAsync(ushort startAddress, ushort numberOfPoints)
     {
-        EnsureConnected();
+        if (!await EnsureConnectedAsync())
+            throw new InvalidOperationException("未连接到从站");
+
         Log($"读取线圈: 起始地址={startAddress}, 数量={numberOfPoints}");
-        var result = await _master!.ReadCoilsAsync(SlaveId, startAddress, numberOfPoints);
-        Log($"读取结果: [{string.Join(", ", result)}]");
-        return result;
+        try
+        {
+            var result = await _master!.ReadCoilsAsync(SlaveId, startAddress, numberOfPoints);
+            Log($"读取结果: [{string.Join(", ", result)}]");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            await HandleCommunicationErrorAsync(ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -151,11 +279,21 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public async Task<bool[]> ReadInputsAsync(ushort startAddress, ushort numberOfPoints)
     {
-        EnsureConnected();
+        if (!await EnsureConnectedAsync())
+            throw new InvalidOperationException("未连接到从站");
+
         Log($"读取离散输入: 起始地址={startAddress}, 数量={numberOfPoints}");
-        var result = await _master!.ReadInputsAsync(SlaveId, startAddress, numberOfPoints);
-        Log($"读取结果: [{string.Join(", ", result)}]");
-        return result;
+        try
+        {
+            var result = await _master!.ReadInputsAsync(SlaveId, startAddress, numberOfPoints);
+            Log($"读取结果: [{string.Join(", ", result)}]");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            await HandleCommunicationErrorAsync(ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -163,11 +301,21 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public async Task<ushort[]> ReadHoldingRegistersAsync(ushort startAddress, ushort numberOfPoints)
     {
-        EnsureConnected();
+        if (!await EnsureConnectedAsync())
+            throw new InvalidOperationException("未连接到从站");
+
         Log($"读取保持寄存器: 起始地址={startAddress}, 数量={numberOfPoints}");
-        var result = await _master!.ReadHoldingRegistersAsync(SlaveId, startAddress, numberOfPoints);
-        Log($"读取结果: [{string.Join(", ", result)}]");
-        return result;
+        try
+        {
+            var result = await _master!.ReadHoldingRegistersAsync(SlaveId, startAddress, numberOfPoints);
+            Log($"读取结果: [{string.Join(", ", result)}]");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            await HandleCommunicationErrorAsync(ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -175,11 +323,21 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public async Task<ushort[]> ReadInputRegistersAsync(ushort startAddress, ushort numberOfPoints)
     {
-        EnsureConnected();
+        if (!await EnsureConnectedAsync())
+            throw new InvalidOperationException("未连接到从站");
+
         Log($"读取输入寄存器: 起始地址={startAddress}, 数量={numberOfPoints}");
-        var result = await _master!.ReadInputRegistersAsync(SlaveId, startAddress, numberOfPoints);
-        Log($"读取结果: [{string.Join(", ", result)}]");
-        return result;
+        try
+        {
+            var result = await _master!.ReadInputRegistersAsync(SlaveId, startAddress, numberOfPoints);
+            Log($"读取结果: [{string.Join(", ", result)}]");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            await HandleCommunicationErrorAsync(ex);
+            throw;
+        }
     }
 
     #endregion
@@ -191,10 +349,20 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public async Task WriteSingleCoilAsync(ushort coilAddress, bool value)
     {
-        EnsureConnected();
+        if (!await EnsureConnectedAsync())
+            throw new InvalidOperationException("未连接到从站");
+
         Log($"写入单个线圈: 地址={coilAddress}, 值={value}");
-        await _master!.WriteSingleCoilAsync(SlaveId, coilAddress, value);
-        Log("写入成功");
+        try
+        {
+            await _master!.WriteSingleCoilAsync(SlaveId, coilAddress, value);
+            Log("写入成功");
+        }
+        catch (Exception ex)
+        {
+            await HandleCommunicationErrorAsync(ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -202,10 +370,20 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public async Task WriteSingleRegisterAsync(ushort registerAddress, ushort value)
     {
-        EnsureConnected();
+        if (!await EnsureConnectedAsync())
+            throw new InvalidOperationException("未连接到从站");
+
         Log($"写入单个寄存器: 地址={registerAddress}, 值={value}");
-        await _master!.WriteSingleRegisterAsync(SlaveId, registerAddress, value);
-        Log("写入成功");
+        try
+        {
+            await _master!.WriteSingleRegisterAsync(SlaveId, registerAddress, value);
+            Log("写入成功");
+        }
+        catch (Exception ex)
+        {
+            await HandleCommunicationErrorAsync(ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -213,10 +391,20 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public async Task WriteMultipleCoilsAsync(ushort startAddress, bool[] data)
     {
-        EnsureConnected();
+        if (!await EnsureConnectedAsync())
+            throw new InvalidOperationException("未连接到从站");
+
         Log($"写入多个线圈: 起始地址={startAddress}, 数量={data.Length}");
-        await _master!.WriteMultipleCoilsAsync(SlaveId, startAddress, data);
-        Log("写入成功");
+        try
+        {
+            await _master!.WriteMultipleCoilsAsync(SlaveId, startAddress, data);
+            Log("写入成功");
+        }
+        catch (Exception ex)
+        {
+            await HandleCommunicationErrorAsync(ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -224,19 +412,42 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public async Task WriteMultipleRegistersAsync(ushort startAddress, ushort[] data)
     {
-        EnsureConnected();
+        if (!await EnsureConnectedAsync())
+            throw new InvalidOperationException("未连接到从站");
+
         Log($"写入多个寄存器: 起始地址={startAddress}, 数量={data.Length}");
-        await _master!.WriteMultipleRegistersAsync(SlaveId, startAddress, data);
-        Log("写入成功");
+        try
+        {
+            await _master!.WriteMultipleRegistersAsync(SlaveId, startAddress, data);
+            Log("写入成功");
+        }
+        catch (Exception ex)
+        {
+            await HandleCommunicationErrorAsync(ex);
+            throw;
+        }
     }
 
     #endregion
 
-    private void EnsureConnected()
+    private async Task HandleCommunicationErrorAsync(Exception ex)
     {
-        if (!IsConnected || _master == null)
+        if (ex is IOException or SocketException)
         {
-            throw new InvalidOperationException("未连接到从站，请先调用 ConnectAsync()");
+            Log($"通信异常: {ex.Message}");
+            
+            // 清理连接
+            _master?.Dispose();
+            _client?.Close();
+            _master = null;
+            _client = null;
+            
+            OnConnectionChanged?.Invoke(false);
+
+            if (AutoReconnect)
+            {
+                _ = StartReconnectAsync();
+            }
         }
     }
 
@@ -250,6 +461,7 @@ public class ModbusTcpMaster : IDisposable
         if (_disposed) return;
         _disposed = true;
 
+        StopReconnect();
         Disconnect();
         GC.SuppressFinalize(this);
     }

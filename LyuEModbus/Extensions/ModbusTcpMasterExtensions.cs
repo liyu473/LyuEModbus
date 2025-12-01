@@ -79,4 +79,40 @@ public static class ModbusTcpMasterExtensions
         master.OnConnectionChanged += connectionHandler;
         return master;
     }
+
+    /// <summary>
+    /// 启用自动重连
+    /// </summary>
+    public static ModbusTcpMaster WithAutoReconnect(this ModbusTcpMaster master, bool enabled = true)
+    {
+        master.AutoReconnect = enabled;
+        return master;
+    }
+
+    /// <summary>
+    /// 设置重连间隔
+    /// </summary>
+    public static ModbusTcpMaster WithReconnectInterval(this ModbusTcpMaster master, int intervalMs)
+    {
+        master.ReconnectInterval = intervalMs;
+        return master;
+    }
+
+    /// <summary>
+    /// 设置最大重连次数
+    /// </summary>
+    public static ModbusTcpMaster WithMaxReconnectAttempts(this ModbusTcpMaster master, int maxAttempts)
+    {
+        master.MaxReconnectAttempts = maxAttempts;
+        return master;
+    }
+
+    /// <summary>
+    /// 设置重连回调
+    /// </summary>
+    public static ModbusTcpMaster WithReconnecting(this ModbusTcpMaster master, Action<int> reconnectHandler)
+    {
+        master.OnReconnecting += reconnectHandler;
+        return master;
+    }
 }

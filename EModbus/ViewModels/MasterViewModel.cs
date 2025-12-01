@@ -29,6 +29,9 @@ public partial class MasterViewModel : ViewModelBase
     private bool isMasterConnected;
 
     [ObservableProperty]
+    private bool isReconnecting;
+
+    [ObservableProperty]
     private string masterStatus = "未连接";
 
     [ObservableProperty]
@@ -49,6 +52,12 @@ public partial class MasterViewModel : ViewModelBase
     [ObservableProperty]
     private ushort writeValue = 0;
 
+    [ObservableProperty]
+    private bool autoReconnect = true;
+
+    [ObservableProperty]
+    private int reconnectAttempt;
+
     [RelayCommand]
     private async Task ConnectMasterAsync()
     {
@@ -64,15 +73,38 @@ public partial class MasterViewModel : ViewModelBase
                 .WithAddress(MasterSettings.IpAddress, MasterSettings.Port)
                 .WithSlaveId(MasterSettings.SlaveId)
                 .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
+                .WithAutoReconnect(AutoReconnect)
+                .WithReconnectInterval(3000)
+                .WithMaxReconnectAttempts(10)
                 .WithLog(msg => MasterLog = MasterLog.Append(msg + Environment.NewLine))
                 .WithConnectionChanged(connected =>
                 {
                     IsMasterConnected = connected;
-                    MasterStatus = connected ? $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}" : "未连接";
+                    IsReconnecting = _tcpMaster?.IsReconnecting ?? false;
+                    
+                    if (connected)
+                    {
+                        MasterStatus = $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}";
+                        ReconnectAttempt = 0;
+                        _toastManager.ShowToast("连接成功", type: Notification.Success);
+                    }
+                    else
+                    {
+                        MasterStatus = IsReconnecting ? "重连中..." : "未连接";
+                        if (!IsReconnecting)
+                        {
+                            _toastManager.ShowToast("连接已断开", type: Notification.Warning);
+                        }
+                    }
+                })
+                .WithReconnecting(attempt =>
+                {
+                    ReconnectAttempt = attempt;
+                    IsReconnecting = true;
+                    MasterStatus = $"重连中... ({attempt}/10)";
                 });
 
             await _tcpMaster.ConnectAsync();
-            _toastManager.ShowToast("主站连接成功", type: Notification.Success);
         }
         catch (Exception ex)
         {
@@ -84,7 +116,7 @@ public partial class MasterViewModel : ViewModelBase
     [RelayCommand]
     private void DisconnectMaster()
     {
-        if (!IsMasterConnected)
+        if (!IsMasterConnected && !IsReconnecting)
         {
             _toastManager.ShowToast("主站未连接", type: Notification.Warning);
             return;
@@ -94,6 +126,10 @@ public partial class MasterViewModel : ViewModelBase
         {
             _tcpMaster?.Disconnect();
             _tcpMaster = null;
+            IsReconnecting = false;
+            ReconnectAttempt = 0;
+            MasterStatus = "未连接";
+            IsMasterConnected = false;
             _toastManager.ShowToast("主站已断开", type: Notification.Info);
         }
         catch (Exception ex)
@@ -101,6 +137,22 @@ public partial class MasterViewModel : ViewModelBase
             MasterLog = MasterLog.Append($"断开失败: {ex.Message}{Environment.NewLine}");
             _toastManager.ShowToast($"断开失败: {ex.Message}", type: Notification.Error);
         }
+    }
+
+    [RelayCommand]
+    private void StopReconnect()
+    {
+        if (!IsReconnecting)
+        {
+            _toastManager.ShowToast("未在重连中", type: Notification.Warning);
+            return;
+        }
+
+        _tcpMaster?.StopReconnect();
+        IsReconnecting = false;
+        ReconnectAttempt = 0;
+        MasterStatus = "未连接";
+        _toastManager.ShowToast("已停止重连", type: Notification.Info);
     }
 
     [RelayCommand]

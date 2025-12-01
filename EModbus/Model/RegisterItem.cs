@@ -11,19 +11,19 @@ public partial class RegisterItem : ObservableObject
     /// 地址
     /// </summary>
     [ObservableProperty]
-    private ushort address;
+    public partial ushort Address { get; set; }
 
     /// <summary>
     /// 值
     /// </summary>
     [ObservableProperty]
-    private ushort value;
+    public partial ushort Value { get; set; }
 
     /// <summary>
     /// 描述
     /// </summary>
     [ObservableProperty]
-    private string description = string.Empty;
+    public partial string Description { get; set; } = string.Empty;
 
     public RegisterItem() { }
 
@@ -44,19 +44,19 @@ public partial class CoilItem : ObservableObject
     /// 地址
     /// </summary>
     [ObservableProperty]
-    private ushort address;
+    public partial ushort Address { get; set; }
 
     /// <summary>
     /// 值
     /// </summary>
     [ObservableProperty]
-    private bool value;
+    public partial bool Value { get; set; }
 
     /// <summary>
     /// 描述
     /// </summary>
     [ObservableProperty]
-    private string description = string.Empty;
+    public partial string Description { get; set; } = string.Empty;
 
     public CoilItem() { }
 

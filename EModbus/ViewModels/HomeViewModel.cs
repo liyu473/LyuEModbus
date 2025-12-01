@@ -14,8 +14,8 @@ public partial class HomeViewModel : ViewModelBase, INavigable
     }
 
     [ObservableProperty]
-    private SlaveViewModel slaveViewModel;
+    public partial SlaveViewModel SlaveViewModel { get; set; }
 
     [ObservableProperty]
-    private MasterViewModel masterViewModel;
+    public partial MasterViewModel MasterViewModel { get; set; }
 }

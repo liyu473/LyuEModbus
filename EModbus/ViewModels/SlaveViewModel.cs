@@ -32,16 +32,16 @@ public partial class SlaveViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private SlaveSettings slaveSettings;
+    public partial SlaveSettings SlaveSettings { get; set; }
 
     [ObservableProperty]
-    private bool isSlaveRunning;
+    public partial bool IsSlaveRunning { get; set; }
 
     [ObservableProperty]
-    private string slaveStatus = "已停止";
+    public partial string SlaveStatus { get; set; } = "已停止";
 
     [ObservableProperty]
-    private string slaveLog = string.Empty;
+    public partial string SlaveLog { get; set; } = string.Empty;
 
 
 
@@ -59,7 +59,7 @@ public partial class SlaveViewModel : ViewModelBase
     /// 初始化寄存器数量
     /// </summary>
     [ObservableProperty]
-    private int registerCount = 20;
+    public partial int RegisterCount { get; set; } = 20;
 
     private void InitializeRegisters()
     {

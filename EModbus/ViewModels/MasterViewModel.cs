@@ -23,62 +23,62 @@ public partial class MasterViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private MasterSettings masterSettings;
+    public partial MasterSettings MasterSettings { get; set; }
 
     [ObservableProperty]
-    private string masterStatus = "未连接";
+    public partial string MasterStatus { get; set; } = "未连接";
 
     [ObservableProperty]
-    private string masterLog = string.Empty;
+    public partial string MasterLog { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private ushort readAddress = 0;
+    public partial ushort ReadAddress { get; set; } = 0;
 
     [ObservableProperty]
-    private ushort readCount = 10;
+    public partial ushort ReadCount { get; set; } = 10;
 
     [ObservableProperty]
-    private string readResult = string.Empty;
+    public partial string ReadResult { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private ushort writeAddress = 0;
+    public partial ushort WriteAddress { get; set; } = 0;
 
     [ObservableProperty]
-    private ushort writeValue = 0;
+    public partial ushort WriteValue { get; set; } = 0;
 
     // 线圈相关
     [ObservableProperty]
-    private ushort coilReadAddress = 0;
+    public partial ushort CoilReadAddress { get; set; } = 0;
 
     [ObservableProperty]
-    private ushort coilReadCount = 10;
+    public partial ushort CoilReadCount { get; set; } = 10;
 
     [ObservableProperty]
-    private string coilReadResult = string.Empty;
+    public partial string CoilReadResult { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private ushort coilWriteAddress = 0;
+    public partial ushort CoilWriteAddress { get; set; } = 0;
 
     [ObservableProperty]
-    private bool coilWriteValue = false;
+    public partial bool CoilWriteValue { get; set; } = false;
 
     [ObservableProperty]
-    private bool autoReconnect = true;
+    public partial bool AutoReconnect { get; set; } = true;
 
     [ObservableProperty]
-    private int reconnectAttempt;
+    public partial int ReconnectAttempt { get; set; }
 
     /// <summary>
     /// 是否已连接（由 ModbusTcpMaster.OnConnectionChanged 事件更新）
     /// </summary>
     [ObservableProperty]
-    private bool isMasterConnected;
+    public partial bool IsMasterConnected { get; set; }
 
     /// <summary>
     /// 是否正在重连（由 ModbusTcpMaster.OnReconnecting 事件更新）
     /// </summary>
     [ObservableProperty]
-    private bool isReconnecting;
+    public partial bool IsReconnecting { get; set; }
 
     [RelayCommand]
     private async Task ConnectMasterAsync()

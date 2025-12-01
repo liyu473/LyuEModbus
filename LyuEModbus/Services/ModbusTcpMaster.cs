@@ -70,14 +70,29 @@ public class ModbusTcpMaster : IDisposable
     public event Action<string>? OnLog;
 
     /// <summary>
+    /// 异步日志事件
+    /// </summary>
+    public event Func<string, Task>? OnLogAsync;
+
+    /// <summary>
     /// 连接状态变化事件
     /// </summary>
     public event Action<bool>? OnConnectionChanged;
 
     /// <summary>
+    /// 异步连接状态变化事件
+    /// </summary>
+    public event Func<bool, Task>? OnConnectionChangedAsync;
+
+    /// <summary>
     /// 重连事件 (当前重连次数)
     /// </summary>
     public event Action<int>? OnReconnecting;
+
+    /// <summary>
+    /// 异步重连事件 (当前重连次数)
+    /// </summary>
+    public event Func<int, Task>? OnReconnectingAsync;
 
     /// <summary>
     /// 创建 Modbus TCP 主站
@@ -128,6 +143,7 @@ public class ModbusTcpMaster : IDisposable
 
             _isReconnecting = false;
             OnConnectionChanged?.Invoke(true);
+            OnConnectionChangedAsync?.Invoke(true);
             Log($"已连接到 {IpAddress}:{Port}");
         }
         catch (Exception ex)
@@ -158,6 +174,7 @@ public class ModbusTcpMaster : IDisposable
             _client = null;
 
             OnConnectionChanged?.Invoke(false);
+            OnConnectionChangedAsync?.Invoke(false);
             Log("已断开连接");
         }
         catch (Exception ex)
@@ -194,6 +211,10 @@ public class ModbusTcpMaster : IDisposable
         {
             attempts++;
             OnReconnecting?.Invoke(attempts);
+            if (OnReconnectingAsync != null)
+            {
+                await OnReconnectingAsync.Invoke(attempts);
+            }
             Log($"重连尝试 {attempts}/{(MaxReconnectAttempts == 0 ? "∞" : MaxReconnectAttempts.ToString())}");
 
             try
@@ -235,6 +256,7 @@ public class ModbusTcpMaster : IDisposable
         if (AutoReconnect && !_isReconnecting)
         {
             OnConnectionChanged?.Invoke(false);
+            OnConnectionChangedAsync?.Invoke(false);
             Log("连接已断开，尝试重连...");
             
             // 清理旧连接
@@ -443,6 +465,7 @@ public class ModbusTcpMaster : IDisposable
             _client = null;
             
             OnConnectionChanged?.Invoke(false);
+            OnConnectionChangedAsync?.Invoke(false);
 
             if (AutoReconnect)
             {
@@ -453,7 +476,9 @@ public class ModbusTcpMaster : IDisposable
 
     private void Log(string message)
     {
-        OnLog?.Invoke($"[{DateTime.Now:HH:mm:ss}] {message}");
+        var formattedMessage = $"[{DateTime.Now:HH:mm:ss}] {message}";
+        OnLog?.Invoke(formattedMessage);
+        OnLogAsync?.Invoke(formattedMessage);
     }
 
     public void Dispose()

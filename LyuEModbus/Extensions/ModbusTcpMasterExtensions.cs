@@ -72,6 +72,15 @@ public static class ModbusTcpMasterExtensions
     }
 
     /// <summary>
+    /// 设置异步日志回调
+    /// </summary>
+    public static ModbusTcpMaster WithLogAsync(this ModbusTcpMaster master, Func<string, Task> logHandler)
+    {
+        master.OnLogAsync += logHandler;
+        return master;
+    }
+
+    /// <summary>
     /// 设置连接状态变化回调
     /// </summary>
     public static ModbusTcpMaster WithConnectionChanged(this ModbusTcpMaster master, Action<bool> connectionHandler)
@@ -81,11 +90,34 @@ public static class ModbusTcpMasterExtensions
     }
 
     /// <summary>
+    /// 设置异步连接状态变化回调
+    /// </summary>
+    public static ModbusTcpMaster WithConnectionChangedAsync(this ModbusTcpMaster master, Func<bool, Task> connectionHandler)
+    {
+        master.OnConnectionChangedAsync += connectionHandler;
+        return master;
+    }
+
+    /// <summary>
     /// 启用自动重连
     /// </summary>
     public static ModbusTcpMaster WithAutoReconnect(this ModbusTcpMaster master, bool enabled = true)
     {
         master.AutoReconnect = enabled;
+        return master;
+    }
+
+    /// <summary>
+    /// 配置自动重连（启用并设置间隔和最大次数）
+    /// </summary>
+    /// <param name="master">主站实例</param>
+    /// <param name="intervalMs">重连间隔（毫秒），默认3000</param>
+    /// <param name="maxAttempts">最大重连次数，0表示无限，默认0</param>
+    public static ModbusTcpMaster WithAutoReconnect(this ModbusTcpMaster master, int intervalMs, int maxAttempts = 0)
+    {
+        master.AutoReconnect = true;
+        master.ReconnectInterval = intervalMs;
+        master.MaxReconnectAttempts = maxAttempts;
         return master;
     }
 
@@ -113,6 +145,15 @@ public static class ModbusTcpMasterExtensions
     public static ModbusTcpMaster WithReconnecting(this ModbusTcpMaster master, Action<int> reconnectHandler)
     {
         master.OnReconnecting += reconnectHandler;
+        return master;
+    }
+
+    /// <summary>
+    /// 设置异步重连回调
+    /// </summary>
+    public static ModbusTcpMaster WithReconnectingAsync(this ModbusTcpMaster master, Func<int, Task> reconnectHandler)
+    {
+        master.OnReconnectingAsync += reconnectHandler;
         return master;
     }
 }

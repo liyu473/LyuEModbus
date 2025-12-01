@@ -22,13 +22,12 @@ public partial class SlaveViewModel : ViewModelBase
         _toastManager = toastManager;
         SlaveSettings = settings.Slave;
         
-        // 延迟初始化寄存器列表，避免DataGrid渲染问题
         _ = InitializeRegistersAsync();
     }
 
     private async Task InitializeRegistersAsync()
     {
-        await Task.Delay(100); // 等待UI准备好
+        await Task.Delay(100); 
         InitializeRegisters();
     }
 
@@ -49,12 +48,12 @@ public partial class SlaveViewModel : ViewModelBase
     /// <summary>
     /// 保持寄存器列表
     /// </summary>
-    public ObservableCollection<RegisterItem> HoldingRegisters { get; } = new();
+    public ObservableCollection<RegisterItem> HoldingRegisters { get; } = [];
 
     /// <summary>
     /// 线圈列表
     /// </summary>
-    public ObservableCollection<CoilItem> Coils { get; } = new();
+    public ObservableCollection<CoilItem> Coils { get; } = [];
 
     /// <summary>
     /// 初始化寄存器数量

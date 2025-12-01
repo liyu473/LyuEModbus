@@ -13,6 +13,7 @@ public class ModbusTcpMaster : IDisposable
     private bool _disposed;
     private CancellationTokenSource? _reconnectCts;
     private bool _isReconnecting;
+    private bool _isConnected;
 
     /// <summary>
     /// 从站IP地址
@@ -57,12 +58,26 @@ public class ModbusTcpMaster : IDisposable
     /// <summary>
     /// 是否已连接
     /// </summary>
-    public bool IsConnected => _client?.Connected ?? false;
+    public bool IsConnected
+    {
+        get => _isConnected;
+        private set
+        {
+            if (_isConnected == value) return;
+            _isConnected = value;
+            OnConnectionChanged?.Invoke(value);
+            OnConnectionChangedAsync?.Invoke(value);
+        }
+    }
 
     /// <summary>
     /// 是否正在重连
     /// </summary>
-    public bool IsReconnecting => _isReconnecting;
+    public bool IsReconnecting
+    {
+        get => _isReconnecting;
+        private set => _isReconnecting = value;
+    }
 
     /// <summary>
     /// 日志事件
@@ -141,9 +156,8 @@ public class ModbusTcpMaster : IDisposable
             _master.Transport.ReadTimeout = ReadTimeout;
             _master.Transport.WriteTimeout = WriteTimeout;
 
-            _isReconnecting = false;
-            OnConnectionChanged?.Invoke(true);
-            OnConnectionChangedAsync?.Invoke(true);
+            IsReconnecting = false;
+            IsConnected = true;
             Log($"已连接到 {IpAddress}:{Port}");
         }
         catch (Exception ex)
@@ -173,8 +187,7 @@ public class ModbusTcpMaster : IDisposable
             _master = null;
             _client = null;
 
-            OnConnectionChanged?.Invoke(false);
-            OnConnectionChangedAsync?.Invoke(false);
+            IsConnected = false;
             Log("已断开连接");
         }
         catch (Exception ex)
@@ -191,7 +204,7 @@ public class ModbusTcpMaster : IDisposable
     {
         _reconnectCts?.Cancel();
         _reconnectCts = null;
-        _isReconnecting = false;
+        IsReconnecting = false;
     }
 
     /// <summary>
@@ -199,9 +212,9 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     private async Task StartReconnectAsync()
     {
-        if (!AutoReconnect || _isReconnecting) return;
+        if (!AutoReconnect || IsReconnecting) return;
 
-        _isReconnecting = true;
+        IsReconnecting = true;
         _reconnectCts = new CancellationTokenSource();
         var attempts = 0;
 
@@ -228,7 +241,7 @@ public class ModbusTcpMaster : IDisposable
                 if (MaxReconnectAttempts > 0 && attempts >= MaxReconnectAttempts)
                 {
                     Log($"已达到最大重连次数 {MaxReconnectAttempts}，停止重连");
-                    _isReconnecting = false;
+                    IsReconnecting = false;
                     return;
                 }
 
@@ -243,7 +256,7 @@ public class ModbusTcpMaster : IDisposable
             }
         }
 
-        _isReconnecting = false;
+        IsReconnecting = false;
     }
 
     /// <summary>
@@ -253,10 +266,9 @@ public class ModbusTcpMaster : IDisposable
     {
         if (IsConnected && _master != null) return true;
 
-        if (AutoReconnect && !_isReconnecting)
+        if (AutoReconnect && !IsReconnecting)
         {
-            OnConnectionChanged?.Invoke(false);
-            OnConnectionChangedAsync?.Invoke(false);
+            IsConnected = false;
             Log("连接已断开，尝试重连...");
             
             // 清理旧连接
@@ -464,8 +476,7 @@ public class ModbusTcpMaster : IDisposable
             _master = null;
             _client = null;
             
-            OnConnectionChanged?.Invoke(false);
-            OnConnectionChangedAsync?.Invoke(false);
+            IsConnected = false;
 
             if (AutoReconnect)
             {

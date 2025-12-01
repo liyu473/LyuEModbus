@@ -110,9 +110,6 @@ public static class ModbusTcpMasterExtensions
     /// <summary>
     /// 配置自动重连（启用并设置间隔和最大次数）
     /// </summary>
-    /// <param name="master">主站实例</param>
-    /// <param name="intervalMs">重连间隔（毫秒），默认3000</param>
-    /// <param name="maxAttempts">最大重连次数，0表示无限，默认0</param>
     public static ModbusTcpMaster WithAutoReconnect(this ModbusTcpMaster master, int intervalMs, int maxAttempts = 0)
     {
         master.AutoReconnect = true;

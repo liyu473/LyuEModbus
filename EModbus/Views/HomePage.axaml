@@ -1,35 +1,44 @@
 <UserControl
-    x:Class="EModbus.Views.HomePage"
-    xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
-    xmlns:vm="clr-namespace:EModbus.ViewModels"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
-    x:DataType="vm:HomeViewModel"
-    mc:Ignorable="d">
-    <DockPanel LastChildFill="True">
-        <StackPanel
-            MaxWidth="{StaticResource PageMaxWidth}"
-            Margin="{StaticResource PageMargin}"
-            DockPanel.Dock="Top"
-            Spacing="4">
-            <TextBlock Classes="Title" Text="Home" />
-            <TextBlock
-                Classes="p"
-                Text="home page for testing dialog and toast within sukiui"
-                TextWrapping="Wrap" />
-        </StackPanel>
+x:Class="EModbus.Views.HomePage"
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
+xmlns:vm="clr-namespace:EModbus.ViewModels"
+d:DesignHeight="450"
+d:DesignWidth="800"
+x:DataType="vm:HomeViewModel"
+mc:Ignorable="d">
+	<DockPanel LastChildFill="True">
+		<StackPanel
+		MaxWidth="{StaticResource PageMaxWidth}"
+		Margin="{StaticResource PageMargin}"
+		DockPanel.Dock="Top"
+		Spacing="4">
+			<TextBlock Classes="Title" Text="Home" />
+			<TextBlock
+			Classes="p"
+			Text="用于LyuEModbus主站（Master）与从站（Slave）测试"
+			TextWrapping="Wrap" />
+		</StackPanel>
 
-        <ScrollViewer>
-            <StackPanel
-                MaxWidth="{StaticResource PageMaxWidth}"
-                Margin="{StaticResource PageMargin}"
-                Spacing="32">
-               
-            </StackPanel>
-        </ScrollViewer>
-    </DockPanel>
+		<ScrollViewer>
+			<StackPanel
+			MaxWidth="{StaticResource PageMaxWidth}"
+			Margin="{StaticResource PageMargin}"
+			Spacing="32">
+				<TabControl>
+					<TabControl.Items>
+						<TabItem Header="Slave">
+							
+						</TabItem>
+						<TabItem Header="Master">
+
+						</TabItem>
+					</TabControl.Items>
+				</TabControl>
+			</StackPanel>
+		</ScrollViewer>
+	</DockPanel>
 </UserControl>

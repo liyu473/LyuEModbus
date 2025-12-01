@@ -52,12 +52,10 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     public event Action<bool>? OnConnectionChanged;
 
-    private ModbusTcpMaster() { }
-
     /// <summary>
     /// 创建 Modbus TCP 主站
     /// </summary>
-    public ModbusTcpMaster(string ipAddress, int port, byte slaveId, int readTimeout = 3000, int writeTimeout = 3000)
+    public ModbusTcpMaster(string ipAddress = "127.0.0.1", int port = 502, byte slaveId = 1, int readTimeout = 3000, int writeTimeout = 3000)
     {
         IpAddress = ipAddress;
         Port = port;
@@ -65,90 +63,11 @@ public class ModbusTcpMaster : IDisposable
         ReadTimeout = readTimeout;
         WriteTimeout = writeTimeout;
     }
-
-    #region Fluent Builder
 
     /// <summary>
     /// 创建主站构建器
     /// </summary>
     public static ModbusTcpMaster Create() => new();
-
-    /// <summary>
-    /// 设置目标地址
-    /// </summary>
-    public ModbusTcpMaster WithAddress(string ipAddress)
-    {
-        IpAddress = ipAddress;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置目标地址和端口
-    /// </summary>
-    public ModbusTcpMaster WithAddress(string ipAddress, int port)
-    {
-        IpAddress = ipAddress;
-        Port = port;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置端口
-    /// </summary>
-    public ModbusTcpMaster WithPort(int port)
-    {
-        Port = port;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置从站ID
-    /// </summary>
-    public ModbusTcpMaster WithSlaveId(byte slaveId)
-    {
-        SlaveId = slaveId;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置超时
-    /// </summary>
-    public ModbusTcpMaster WithTimeout(int readTimeout, int writeTimeout)
-    {
-        ReadTimeout = readTimeout;
-        WriteTimeout = writeTimeout;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置超时（读写使用相同值）
-    /// </summary>
-    public ModbusTcpMaster WithTimeout(int timeout)
-    {
-        ReadTimeout = timeout;
-        WriteTimeout = timeout;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置日志回调
-    /// </summary>
-    public ModbusTcpMaster WithLog(Action<string> logHandler)
-    {
-        OnLog += logHandler;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置连接状态变化回调
-    /// </summary>
-    public ModbusTcpMaster WithConnectionChanged(Action<bool> connectionHandler)
-    {
-        OnConnectionChanged += connectionHandler;
-        return this;
-    }
-
-    #endregion
 
     /// <summary>
     /// 连接到从站（支持链式调用）

@@ -1,0 +1,115 @@
+<UserControl
+    x:Class="EModbus.Views.MasterView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:vm="clr-namespace:EModbus.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:MasterViewModel"
+    mc:Ignorable="d">
+    <StackPanel Spacing="16" Margin="0,16,0,0">
+        <!-- 主站状态卡片 -->
+        <shadui:Card>
+            <shadui:Card.Header>
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="h3" Text="主站状态" />
+                    <TextBlock Classes="Muted" Text="Modbus TCP 主站测试" />
+                </StackPanel>
+            </shadui:Card.Header>
+            <shadui:Card.Content>
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,8,0,0">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="目标地址" VerticalAlignment="Center" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MasterSettings.IpAddress}" Classes="Muted" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="端口号" VerticalAlignment="Center" Margin="0,8,0,0" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MasterSettings.Port}" Classes="Muted" Margin="0,8,0,0" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="从站ID" VerticalAlignment="Center" Margin="0,8,0,0" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MasterSettings.SlaveId}" Classes="Muted" Margin="0,8,0,0" />
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="连接状态" VerticalAlignment="Center" Margin="0,8,0,0" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MasterStatus}" 
+                               Classes.Success="{Binding IsMasterConnected}"
+                               Classes.Muted="{Binding !IsMasterConnected}"
+                               Margin="0,8,0,0" />
+                </Grid>
+            </shadui:Card.Content>
+            <shadui:Card.Footer>
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                    <Button Content="连接" Classes="Primary" 
+                            Command="{Binding ConnectMasterCommand}" 
+                            IsEnabled="{Binding !IsMasterConnected}" />
+                    <Button Content="断开" Classes="Destructive" 
+                            Command="{Binding DisconnectMasterCommand}" 
+                            IsEnabled="{Binding IsMasterConnected}" />
+                </StackPanel>
+            </shadui:Card.Footer>
+        </shadui:Card>
+
+        <!-- 读写测试卡片 -->
+        <shadui:Card>
+            <shadui:Card.Header>
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="h3" Text="读写测试" />
+                    <TextBlock Classes="Muted" Text="读写保持寄存器 (功能码 03/06)" />
+                </StackPanel>
+            </shadui:Card.Header>
+            <shadui:Card.Content>
+                <StackPanel Spacing="16">
+                    <!-- 读取 -->
+                    <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ReadAddress}" Watermark="0" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="数量" VerticalAlignment="Center" Margin="16,0,8,0" />
+                        <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding ReadCount}" Watermark="10" />
+                        <Button Grid.Row="0" Grid.Column="4" Content="读取" Classes="Primary" Margin="16,0,0,0"
+                                Command="{Binding ReadHoldingRegistersCommand}" 
+                                IsEnabled="{Binding IsMasterConnected}" />
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="结果" VerticalAlignment="Center" Margin="0,8,8,0" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
+                                 Text="{Binding ReadResult}" IsReadOnly="True" 
+                                 Watermark="读取结果显示在这里..." Margin="0,8,0,0" />
+                    </Grid>
+
+                    <Border Height="1" Background="{DynamicResource BorderBrush}" />
+
+                    <!-- 写入 -->
+                    <Grid ColumnDefinitions="Auto,*,Auto,*,Auto">
+                        <TextBlock Grid.Column="0" Text="地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox Grid.Column="1" Text="{Binding WriteAddress}" Watermark="0" />
+                        <TextBlock Grid.Column="2" Text="值" VerticalAlignment="Center" Margin="16,0,8,0" />
+                        <TextBox Grid.Column="3" Text="{Binding WriteValue}" Watermark="0" />
+                        <Button Grid.Column="4" Content="写入" Classes="Primary" Margin="16,0,0,0"
+                                Command="{Binding WriteSingleRegisterCommand}" 
+                                IsEnabled="{Binding IsMasterConnected}" />
+                    </Grid>
+                </StackPanel>
+            </shadui:Card.Content>
+        </shadui:Card>
+
+        <!-- 主站日志卡片 -->
+        <shadui:Card>
+            <shadui:Card.Header>
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="h3" Text="通信日志" />
+                        <TextBlock Classes="Muted" Text="主站通信过程中的日志记录" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="清空" Classes="Outline" 
+                            Command="{Binding ClearMasterLogCommand}" VerticalAlignment="Center" />
+                </Grid>
+            </shadui:Card.Header>
+            <shadui:Card.Content>
+                <Border Height="200" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="8">
+                        <TextBlock Text="{Binding MasterLog}" TextWrapping="Wrap" />
+                    </ScrollViewer>
+                </Border>
+            </shadui:Card.Content>
+        </shadui:Card>
+    </StackPanel>
+</UserControl>

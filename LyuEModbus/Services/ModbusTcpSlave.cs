@@ -49,84 +49,23 @@ public class ModbusTcpSlave : IDisposable
     /// </summary>
     public event Action<bool>? OnStatusChanged;
 
-    private ModbusTcpSlave() { }
-
     /// <summary>
     /// 创建 Modbus TCP 从站
     /// </summary>
     /// <param name="ipAddress">监听地址，默认 0.0.0.0</param>
     /// <param name="port">端口号，默认 502</param>
     /// <param name="slaveId">从站ID，默认 1</param>
-    public ModbusTcpSlave(string ipAddress, int port, byte slaveId)
+    public ModbusTcpSlave(string ipAddress = "0.0.0.0", int port = 502, byte slaveId = 1)
     {
         IpAddress = ipAddress;
         Port = port;
         SlaveId = slaveId;
     }
-
-    #region Fluent Builder
 
     /// <summary>
     /// 创建从站构建器
     /// </summary>
     public static ModbusTcpSlave Create() => new();
-
-    /// <summary>
-    /// 设置监听地址
-    /// </summary>
-    public ModbusTcpSlave WithAddress(string ipAddress)
-    {
-        IpAddress = ipAddress;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置监听地址和端口
-    /// </summary>
-    public ModbusTcpSlave WithAddress(string ipAddress, int port)
-    {
-        IpAddress = ipAddress;
-        Port = port;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置端口
-    /// </summary>
-    public ModbusTcpSlave WithPort(int port)
-    {
-        Port = port;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置从站ID
-    /// </summary>
-    public ModbusTcpSlave WithSlaveId(byte slaveId)
-    {
-        SlaveId = slaveId;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置日志回调
-    /// </summary>
-    public ModbusTcpSlave WithLog(Action<string> logHandler)
-    {
-        OnLog += logHandler;
-        return this;
-    }
-
-    /// <summary>
-    /// 设置状态变化回调
-    /// </summary>
-    public ModbusTcpSlave WithStatusChanged(Action<bool> statusHandler)
-    {
-        OnStatusChanged += statusHandler;
-        return this;
-    }
-
-    #endregion
 
     /// <summary>
     /// 启动从站（支持链式调用）

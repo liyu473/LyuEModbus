@@ -16,6 +16,8 @@ namespace EModbus.Services;
 [Import<IUtilitiesModule>]
 [Singleton<MainWindowViewModel>]
 [Singleton<HomeViewModel>]
+[Singleton<SlaveViewModel>]
+[Singleton<MasterViewModel>]
 [Singleton<SettingsViewModel>]
 [Transient<AboutViewModel>]
 [Singleton(typeof(ThemeWatcher), Factory = nameof(ThemeWatcherFactory))]

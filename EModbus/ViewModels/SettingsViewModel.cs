@@ -1,8 +1,11 @@
+using System.ComponentModel;
+using System.IO;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EModbus.Extensions;
 using EModbus.Model;
-using EModbus.Models;
+using Extensions;
 using ShadUI;
 
 namespace EModbus.ViewModels;
@@ -10,100 +13,54 @@ namespace EModbus.ViewModels;
 [Page("settings")]
 public partial class SettingsViewModel : ViewModelBase, INavigable
 {
+    private readonly ModbusSettings _modbusSettings;
     private readonly ToastManager _toastManager;
 
-    public SettingsViewModel(ToastManager toastManager)
+    public SettingsViewModel(ToastManager toastManager, ModbusSettings modbusSettings)
     {
         _toastManager = toastManager;
-        LoadSettings();
+        _modbusSettings = modbusSettings;
+
+        Settings = modbusSettings;
+
+        Settings.Slave.PropertyChanged += Slave_PropertyChanged;
+        Settings.Master.PropertyChanged += Master_PropertyChanged;
     }
 
-    #region 主站配置
-
-    [ObservableProperty]
-    private string _masterIpAddress = "127.0.0.1";
-
-    [ObservableProperty]
-    private int _masterPort = 502;
-
-    [ObservableProperty]
-    private byte _masterSlaveId = 1;
-
-    [ObservableProperty]
-    private int _masterReadTimeout = 3000;
-
-    [ObservableProperty]
-    private int _masterWriteTimeout = 3000;
-
-    #endregion
-
-    #region 从站配置
-
-    [ObservableProperty]
-    private string _slaveIpAddress = "0.0.0.0";
-
-    [ObservableProperty]
-    private int _slavePort = 502;
-
-    [ObservableProperty]
-    private byte _slaveSlaveId = 1;
-
-    #endregion
-
-    /// <summary>
-    /// 加载配置
-    /// </summary>
-    private void LoadSettings()
+    private void Master_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        var settings = ConfigurationExtension.ModbusSettings;
-
-        MasterIpAddress = settings.Master.IpAddress;
-        MasterPort = settings.Master.Port;
-        MasterSlaveId = settings.Master.SlaveId;
-        MasterReadTimeout = settings.Master.ReadTimeout;
-        MasterWriteTimeout = settings.Master.WriteTimeout;
-
-        SlaveIpAddress = settings.Slave.IpAddress;
-        SlavePort = settings.Slave.Port;
-        SlaveSlaveId = settings.Slave.SlaveId;
+        SaveSettings();
     }
 
-    /// <summary>
-    /// 保存配置
-    /// </summary>
-    [RelayCommand]
-    private void SaveSettings()
+    private void Slave_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        var settings = new ModbusSettings
-        {
-            Master = new MasterSettings
-            {
-                IpAddress = MasterIpAddress,
-                Port = MasterPort,
-                SlaveId = MasterSlaveId,
-                ReadTimeout = MasterReadTimeout,
-                WriteTimeout = MasterWriteTimeout
-            },
-            Slave = new SlaveSettings
-            {
-                IpAddress = SlaveIpAddress,
-                Port = SlavePort,
-                SlaveId = SlaveSlaveId
-            }
-        };
-
-        ConfigurationExtension.SaveSettings(settings);
-        _toastManager.ShowToast("配置已保存", type: Notification.Success);
+        SaveSettings();
     }
 
-    /// <summary>
-    /// 重置配置
-    /// </summary>
+    [ObservableProperty]
+    private ModbusSettings settings;
+
     [RelayCommand]
     private void ResetSettings()
     {
-        ConfigurationExtension.ReloadConfiguration();
-        LoadSettings();
-        _toastManager.ShowToast("配置已重置", type: Notification.Info);
+        Settings.Slave.UpdatePropertiesHighQualityFrom(new());
+        Settings.Master.UpdatePropertiesHighQualityFrom(new());
+    }
+
+    private JsonSerializerOptions _jsonOption = new()
+    {
+        PropertyNamingPolicy = null, // 大驼峰
+        WriteIndented = true,
+    };
+
+    [RelayCommand]
+    private void SaveSettings()
+    {
+        _modbusSettings.UpdatePropertiesHighQualityFrom(Settings);
+        var json = new { Modbus = Settings }.ToJson(_jsonOption);
+
+        File.WriteAllText("appsettings.json", json);
+
+        _toastManager.ShowToast("成功保存应用", type: Notification.Success);
     }
 }

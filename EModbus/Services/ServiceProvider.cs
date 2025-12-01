@@ -1,7 +1,8 @@
 using System;
+using System.IO;
 using Avalonia;
 using EModbus.Extensions;
-using EModbus.Models;
+using EModbus.Model;
 using EModbus.ViewModels;
 using Jab;
 using LogExtension;
@@ -31,19 +32,21 @@ public partial class ServiceProvider : IServiceProvider
     {
         return new ThemeWatcher(Application.Current!);
     }
-    
-    public  PageManager PageManagerFactory()
+
+    private static IConfiguration ConfigurationFactory()
+    {
+        return new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+            .Build();
+    }
+
+    private static ModbusSettings ModbusSettingsFactory(IConfiguration configuration) {
+        return configuration.GetSection("Modbus").Get<ModbusSettings>() ?? new ModbusSettings();
+    }
+
+    public PageManager PageManagerFactory()
     {
         return new PageManager(this);
-    }
-
-    public static IConfiguration ConfigurationFactory()
-    {
-        return ConfigurationExtension.Configuration;
-    }
-
-    public static ModbusSettings ModbusSettingsFactory()
-    {
-        return ConfigurationExtension.ModbusSettings;
     }
 }

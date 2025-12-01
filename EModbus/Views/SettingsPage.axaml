@@ -1,104 +1,103 @@
 <UserControl
-    x:Class="EModbus.Views.SettingsPage"
-    xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
-    xmlns:vm="clr-namespace:EModbus.ViewModels"
-    d:DesignHeight="600"
-    d:DesignWidth="800"
-    x:DataType="vm:SettingsViewModel"
-    mc:Ignorable="d">
-    <DockPanel LastChildFill="True">
-        <StackPanel
-            MaxWidth="{StaticResource PageMaxWidth}"
-            Margin="{StaticResource PageMargin}"
-            DockPanel.Dock="Top"
-            Spacing="4">
-            <TextBlock Classes="Title" Text="Settings" />
-            <TextBlock
-                Classes="p"
-                Text="Modbus 通信配置"
-                TextWrapping="Wrap" />
-        </StackPanel>
+x:Class="EModbus.Views.SettingsPage"
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
+xmlns:vm="clr-namespace:EModbus.ViewModels"
+d:DesignHeight="600"
+d:DesignWidth="800"
+x:DataType="vm:SettingsViewModel"
+mc:Ignorable="d">
+	<DockPanel LastChildFill="True">
+		<StackPanel
+		MaxWidth="{StaticResource PageMaxWidth}"
+		Margin="{StaticResource PageMargin}"
+		DockPanel.Dock="Top"
+		Spacing="4">
+			<TextBlock Classes="Title" Text="Settings" />
+			<TextBlock
+			Classes="p"
+			Text="Modbus 通信配置"
+			TextWrapping="Wrap" />
+		</StackPanel>
 
-        <ScrollViewer>
-            <StackPanel
-                MaxWidth="{StaticResource PageMaxWidth}"
-                Margin="{StaticResource PageMargin}"
-                Spacing="24">
+		<ScrollViewer>
+			<StackPanel
+			MaxWidth="{StaticResource PageMaxWidth}"
+			Margin="{StaticResource PageMargin}"
+			Spacing="24">
 
-                <!-- 主站配置 -->
-                <shadui:Card>
-                    <shadui:Card.Header>
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="h3" Text="主站配置 (Master)" />
-                            <TextBlock Classes="Muted" Text="主站连接从站的目标地址配置" />
-                        </StackPanel>
-                    </shadui:Card.Header>
-                    <shadui:Card.Content>
-                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="0,8,0,0">
-                            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,8,12">
-                                <TextBlock Text="目标IP地址" />
-                                <TextBox Text="{Binding MasterIpAddress}" Watermark="127.0.0.1" />
-                            </StackPanel>
-                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="8,0,0,12">
-                                <TextBlock Text="端口号" />
-                                <TextBox Text="{Binding MasterPort}" Watermark="502" />
-                            </StackPanel>
+				<!-- 主站配置 -->
+				<shadui:Card>
+					<shadui:Card.Header>
+						<StackPanel Spacing="4">
+							<TextBlock Classes="h3" Text="主站配置 (Master)" />
+							<TextBlock Classes="Muted" Text="主站连接从站的目标地址配置" />
+						</StackPanel>
+					</shadui:Card.Header>
+					<shadui:Card.Content>
+						<Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="0,8,0,0">
+							<StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,8,12">
+								<TextBlock Text="目标IP地址" />
+								<TextBox Text="{Binding Settings.Master.IpAddress, UpdateSourceTrigger=LostFocus}" Watermark="127.0.0.1" />
+							</StackPanel>
+							<StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="8,0,0,12">
+								<TextBlock Text="端口号" />
+								<TextBox Text="{Binding Settings.Master.Port, UpdateSourceTrigger=LostFocus}" Watermark="502" />
+							</StackPanel>
 
-                            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4" Margin="0,0,8,12">
-                                <TextBlock Text="从站ID" />
-                                <TextBox Text="{Binding MasterSlaveId}" Watermark="1" />
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" Margin="8,0,0,12">
-                                <TextBlock Text="读取超时 (ms)" />
-                                <TextBox Text="{Binding MasterReadTimeout}" Watermark="3000" />
-                            </StackPanel>
+							<StackPanel Grid.Row="1" Grid.Column="0" Spacing="4" Margin="0,0,8,12">
+								<TextBlock Text="从站ID" />
+								<TextBox Text="{Binding Settings.Master.SlaveId, UpdateSourceTrigger=LostFocus}" Watermark="1" />
+							</StackPanel>
+							<StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" Margin="8,0,0,12">
+								<TextBlock Text="读取超时 (ms)" />
+								<TextBox Text="{Binding Settings.Master.ReadTimeout, UpdateSourceTrigger=LostFocus}" Watermark="3000" />
+							</StackPanel>
 
-                            <StackPanel Grid.Row="2" Grid.Column="0" Spacing="4" Margin="0,0,8,0">
-                                <TextBlock Text="写入超时 (ms)" />
-                                <TextBox Text="{Binding MasterWriteTimeout}" Watermark="3000" />
-                            </StackPanel>
-                        </Grid>
-                    </shadui:Card.Content>
-                </shadui:Card>
+							<StackPanel Grid.Row="2" Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+								<TextBlock Text="写入超时 (ms)" />
+								<TextBox Text="{Binding Settings.Master.WriteTimeout, UpdateSourceTrigger=LostFocus}" Watermark="3000" />
+							</StackPanel>
+						</Grid>
+					</shadui:Card.Content>
+				</shadui:Card>
 
-                <!-- 从站配置 -->
-                <shadui:Card>
-                    <shadui:Card.Header>
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="h3" Text="从站配置 (Slave)" />
-                            <TextBlock Classes="Muted" Text="模拟从站的监听地址配置" />
-                        </StackPanel>
-                    </shadui:Card.Header>
-                    <shadui:Card.Content>
-                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,8,0,0">
-                            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,8,12">
-                                <TextBlock Text="监听IP地址" />
-                                <TextBox Text="{Binding SlaveIpAddress}" Watermark="0.0.0.0" />
-                            </StackPanel>
-                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="8,0,0,12">
-                                <TextBlock Text="端口号" />
-                                <TextBox Text="{Binding SlavePort}" Watermark="502" />
-                            </StackPanel>
+				<!-- 从站配置 -->
+				<shadui:Card>
+					<shadui:Card.Header>
+						<StackPanel Spacing="4">
+							<TextBlock Classes="h3" Text="从站配置 (Slave)" />
+							<TextBlock Classes="Muted" Text="模拟从站的监听地址配置" />
+						</StackPanel>
+					</shadui:Card.Header>
+					<shadui:Card.Content>
+						<Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,8,0,0">
+							<StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,8,12">
+								<TextBlock Text="监听IP地址" />
+								<TextBox Text="{Binding Settings.Slave.IpAddress, UpdateSourceTrigger=LostFocus}" Watermark="0.0.0.0" />
+							</StackPanel>
+							<StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="8,0,0,12">
+								<TextBlock Text="端口号" />
+								<TextBox Text="{Binding Settings.Slave.Port, UpdateSourceTrigger=LostFocus}" Watermark="502" />
+							</StackPanel>
+							<StackPanel Grid.Row="1" Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+								<TextBlock Text="从站ID" />
+								<TextBox Text="{Binding Settings.Slave.SlaveId, UpdateSourceTrigger=LostFocus}" Watermark="1" />
+							</StackPanel>
+						</Grid>
+					</shadui:Card.Content>
+				</shadui:Card>
 
-                            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4" Margin="0,0,8,0">
-                                <TextBlock Text="从站ID" />
-                                <TextBox Text="{Binding SlaveSlaveId}" Watermark="1" />
-                            </StackPanel>
-                        </Grid>
-                    </shadui:Card.Content>
-                </shadui:Card>
+				<!-- 操作按钮 -->
+				<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Right">
+					<Button Content="重置" Classes="Outline" Command="{Binding ResetSettingsCommand}" />
+					<Button Classes="Primary" Content="保存配置" Command="{Binding SaveSettingsCommand}" />
+				</StackPanel>
 
-                <!-- 操作按钮 -->
-                <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Right">
-                    <Button Content="重置" Classes="Outline" Command="{Binding ResetSettingsCommand}" />
-                    <Button Classes="Primary" Content="保存配置" Command="{Binding SaveSettingsCommand}" />
-                </StackPanel>
-
-            </StackPanel>
-        </ScrollViewer>
-    </DockPanel>
+			</StackPanel>
+		</ScrollViewer>
+	</DockPanel>
 </UserControl>

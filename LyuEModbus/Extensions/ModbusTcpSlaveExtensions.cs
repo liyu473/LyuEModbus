@@ -54,11 +54,29 @@ public static class ModbusTcpSlaveExtensions
     }
 
     /// <summary>
+    /// 设置异步日志回调
+    /// </summary>
+    public static ModbusTcpSlave WithLogAsync(this ModbusTcpSlave slave, Func<string, Task> logHandler)
+    {
+        slave.OnLogAsync += logHandler;
+        return slave;
+    }
+
+    /// <summary>
     /// 设置状态变化回调
     /// </summary>
     public static ModbusTcpSlave WithStatusChanged(this ModbusTcpSlave slave, Action<bool> statusHandler)
     {
         slave.OnStatusChanged += statusHandler;
+        return slave;
+    }
+
+    /// <summary>
+    /// 设置异步状态变化回调
+    /// </summary>
+    public static ModbusTcpSlave WithStatusChangedAsync(this ModbusTcpSlave slave, Func<bool, Task> statusHandler)
+    {
+        slave.OnStatusChangedAsync += statusHandler;
         return slave;
     }
 
@@ -90,6 +108,15 @@ public static class ModbusTcpSlaveExtensions
     }
 
     /// <summary>
+    /// 设置异步保持寄存器写入回调
+    /// </summary>
+    public static ModbusTcpSlave WithHoldingRegisterWrittenAsync(this ModbusTcpSlave slave, Func<ushort, ushort, ushort, Task> handler)
+    {
+        slave.OnHoldingRegisterWrittenAsync += handler;
+        return slave;
+    }
+
+    /// <summary>
     /// 设置线圈写入回调
     /// </summary>
     public static ModbusTcpSlave WithCoilWritten(this ModbusTcpSlave slave, Action<ushort, bool> handler)
@@ -98,4 +125,12 @@ public static class ModbusTcpSlaveExtensions
         return slave;
     }
 
+    /// <summary>
+    /// 设置异步线圈写入回调
+    /// </summary>
+    public static ModbusTcpSlave WithCoilWrittenAsync(this ModbusTcpSlave slave, Func<ushort, bool, Task> handler)
+    {
+        slave.OnCoilWrittenAsync += handler;
+        return slave;
+    }
 }

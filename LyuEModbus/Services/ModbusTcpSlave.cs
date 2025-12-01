@@ -62,9 +62,19 @@ public class ModbusTcpSlave : IDisposable
     public event Action<string>? OnLog;
 
     /// <summary>
+    /// 异步日志事件
+    /// </summary>
+    public event Func<string, Task>? OnLogAsync;
+
+    /// <summary>
     /// 状态变化事件
     /// </summary>
     public event Action<bool>? OnStatusChanged;
+
+    /// <summary>
+    /// 异步状态变化事件
+    /// </summary>
+    public event Func<bool, Task>? OnStatusChangedAsync;
 
     /// <summary>
     /// 寄存器值被修改事件 (地址, 旧值, 新值)
@@ -72,9 +82,19 @@ public class ModbusTcpSlave : IDisposable
     public event Action<ushort, ushort, ushort>? OnHoldingRegisterWritten;
 
     /// <summary>
+    /// 异步寄存器值被修改事件 (地址, 旧值, 新值)
+    /// </summary>
+    public event Func<ushort, ushort, ushort, Task>? OnHoldingRegisterWrittenAsync;
+
+    /// <summary>
     /// 线圈值被修改事件 (地址, 值)
     /// </summary>
     public event Action<ushort, bool>? OnCoilWritten;
+
+    /// <summary>
+    /// 异步线圈值被修改事件 (地址, 值)
+    /// </summary>
+    public event Func<ushort, bool, Task>? OnCoilWrittenAsync;
 
     /// <summary>
     /// 创建 Modbus TCP 从站
@@ -141,6 +161,10 @@ public class ModbusTcpSlave : IDisposable
 
             IsRunning = true;
             OnStatusChanged?.Invoke(true);
+            if (OnStatusChangedAsync != null)
+            {
+                await OnStatusChangedAsync.Invoke(true);
+            }
             Log($"从站已启动 - {IpAddress}:{Port}, SlaveId: {SlaveId}");
         }
         catch (Exception ex)
@@ -182,12 +206,12 @@ public class ModbusTcpSlave : IDisposable
     /// </summary>
     private async Task MonitorDataChangesAsync()
     {
-        while (!_cts?.Token.IsCancellationRequested ?? false)
+        while (_cts != null && !_cts.Token.IsCancellationRequested)
         {
             try
             {
                 await Task.Delay(ChangeDetectionInterval, _cts.Token);
-                DetectChanges();
+                await DetectChangesAsync();
             }
             catch (OperationCanceledException)
             {
@@ -200,7 +224,7 @@ public class ModbusTcpSlave : IDisposable
         }
     }
 
-    private void DetectChanges()
+    private async Task DetectChangesAsync()
     {
         if (_slave?.DataStore == null || _lastHoldingValues == null || _lastCoilValues == null) return;
 
@@ -216,6 +240,10 @@ public class ModbusTcpSlave : IDisposable
                 
                 Log($"保持寄存器被修改: 地址={address}, 旧值={oldValue}, 新值={newValue}");
                 OnHoldingRegisterWritten?.Invoke(address, oldValue, newValue);
+                if (OnHoldingRegisterWrittenAsync != null)
+                {
+                    await OnHoldingRegisterWrittenAsync.Invoke(address, oldValue, newValue);
+                }
                 
                 _lastHoldingValues[i] = newValue;
             }
@@ -232,6 +260,10 @@ public class ModbusTcpSlave : IDisposable
                 
                 Log($"线圈被修改: 地址={address}, 值={value}");
                 OnCoilWritten?.Invoke(address, value);
+                if (OnCoilWrittenAsync != null)
+                {
+                    await OnCoilWrittenAsync.Invoke(address, value);
+                }
                 
                 _lastCoilValues[i] = value;
             }
@@ -322,7 +354,9 @@ public class ModbusTcpSlave : IDisposable
 
     private void Log(string message)
     {
-        OnLog?.Invoke($"[{DateTime.Now:HH:mm:ss}] {message}");
+        var formattedMessage = $"[{DateTime.Now:HH:mm:ss}] {message}";
+        OnLog?.Invoke(formattedMessage);
+        OnLogAsync?.Invoke(formattedMessage);
     }
 
     public void Dispose()

@@ -1,0 +1,26 @@
+<Application
+    x:Class="EModbus.App"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:avaByShadUi="clr-namespace:EModbus"
+    xmlns:system="clr-namespace:System;assembly=System.Runtime"
+    xmlns:themes="clr-namespace:ShadUI;assembly=ShadUI"
+    RequestedThemeVariant="Default">
+    <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
+    <Application.DataTemplates>
+        <avaByShadUi:ViewLocator />
+    </Application.DataTemplates>
+    <Application.Resources>
+        <FontFamily x:Key="JetbrainsFont">avares://EModbus/Assets/Fonts#JetBrains Mono</FontFamily>
+        <FontFamily x:Key="ManropeFont">avares://EModbus/Assets/Fonts#Manrope</FontFamily>
+        <FontFamily x:Key="LucideIcon">avares://EModbus/Assets/Fonts#lucide</FontFamily>
+        <FontFamily x:Key="ShadUIIcon">avares://EModbus/Assets/Fonts#shadui</FontFamily>
+
+        <Thickness x:Key="PageMargin">48,24</Thickness>
+        <system:Double x:Key="PageMaxWidth">900</system:Double>
+    </Application.Resources>
+    <Application.Styles>
+        <themes:ShadTheme />
+        <StyleInclude Source="avares://EModbus/Styles/Index.axaml" />
+    </Application.Styles>
+</Application>

@@ -1,14 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net6.0;net9.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
 
-  <ItemGroup>
-    <PackageReference Include="NModbus" />
-    <PackageReference Include="TouchSocket" />
-  </ItemGroup>
+		<!-- NuGet 包信息 -->
+		<PackageId>LyuEModbus</PackageId>
+		<Version>1.1.0</Version>
+		<Authors>Liyu</Authors>
+		<Description>基于NModbus的简易链式拓展库（支持读写，心跳，重连，错误回调，日志回调）</Description>
+		<PackageTags>modbus;nmodbus</PackageTags>
+
+		<!-- GitHub 仓库信息 -->
+		<RepositoryUrl>https://github.com/liyu473/LyuEModbus</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageProjectUrl>https://github.com/liyu473/LyuEModbus</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+		<!-- 打包时自动生成 nupkg -->
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="NModbus" />
+		<PackageReference Include="TouchSocket" />
+	</ItemGroup>
 
 </Project>

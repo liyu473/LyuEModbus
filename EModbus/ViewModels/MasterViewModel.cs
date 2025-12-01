@@ -108,7 +108,6 @@ public partial class MasterViewModel : ViewModelBase
                     }
                     else
                     {
-                        // 从 _tcpMaster 读取实际的重连状态
                         var isReconnecting = _tcpMaster?.IsReconnecting ?? false;
                         IsReconnecting = isReconnecting;
                         MasterStatus = isReconnecting ? "重连中..." : "未连接";

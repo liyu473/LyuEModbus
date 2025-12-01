@@ -29,4 +29,8 @@
         <PackageReference Include="Microsoft.Extensions.Configuration" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\LyuEModbus\LyuEModbus.csproj" />
+    </ItemGroup>
 </Project>

@@ -160,6 +160,14 @@ public partial class SlaveViewModel : ViewModelBase
                         Coils[address].Value = value;
                     }
                     _toastManager.ShowToast($"线圈[{address}]: {value}", type: Notification.Info);
+                })
+                .WithClientConnected(client =>
+                {
+                    _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success);
+                })
+                .WithClientDisconnected(client =>
+                {
+                    _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning);
                 });
 
             await _tcpSlave.StartAsync();

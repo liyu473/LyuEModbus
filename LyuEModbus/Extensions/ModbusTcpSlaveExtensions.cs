@@ -133,4 +133,40 @@ public static class ModbusTcpSlaveExtensions
         slave.OnCoilWrittenAsync += handler;
         return slave;
     }
+
+    /// <summary>
+    /// 设置客户端连接回调
+    /// </summary>
+    public static ModbusTcpSlave WithClientConnected(this ModbusTcpSlave slave, Action<string> handler)
+    {
+        slave.OnClientConnected += handler;
+        return slave;
+    }
+
+    /// <summary>
+    /// 设置异步客户端连接回调
+    /// </summary>
+    public static ModbusTcpSlave WithClientConnectedAsync(this ModbusTcpSlave slave, Func<string, Task> handler)
+    {
+        slave.OnClientConnectedAsync += handler;
+        return slave;
+    }
+
+    /// <summary>
+    /// 设置客户端断开回调
+    /// </summary>
+    public static ModbusTcpSlave WithClientDisconnected(this ModbusTcpSlave slave, Action<string> handler)
+    {
+        slave.OnClientDisconnected += handler;
+        return slave;
+    }
+
+    /// <summary>
+    /// 设置异步客户端断开回调
+    /// </summary>
+    public static ModbusTcpSlave WithClientDisconnectedAsync(this ModbusTcpSlave slave, Func<string, Task> handler)
+    {
+        slave.OnClientDisconnectedAsync += handler;
+        return slave;
+    }
 }

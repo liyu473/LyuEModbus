@@ -94,6 +94,7 @@ public partial class MasterViewModel : ViewModelBase
             _tcpMaster = ModbusTcpMaster.Create()
                 .WithSettings(MasterSettings)
                 .WithAutoReconnect(3000, 10)
+                .WithHeartbeat(3000)
                 .WithLog(msg => MasterLog = MasterLog.Append(msg + Environment.NewLine))
                 .WithConnectionChanged(connected =>
                 {

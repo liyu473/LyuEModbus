@@ -153,4 +153,23 @@ public static class ModbusTcpMasterExtensions
         master.OnReconnectingAsync += reconnectHandler;
         return master;
     }
+
+    /// <summary>
+    /// 启用心跳检测
+    /// </summary>
+    public static ModbusTcpMaster WithHeartbeat(this ModbusTcpMaster master, bool enabled = true)
+    {
+        master.EnableHeartbeat = enabled;
+        return master;
+    }
+
+    /// <summary>
+    /// 配置心跳检测（启用并设置间隔）
+    /// </summary>
+    public static ModbusTcpMaster WithHeartbeat(this ModbusTcpMaster master, int intervalMs)
+    {
+        master.EnableHeartbeat = true;
+        master.HeartbeatInterval = intervalMs;
+        return master;
+    }
 }

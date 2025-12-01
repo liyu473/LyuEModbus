@@ -15,6 +15,7 @@ public class ModbusTcpSlave : IDisposable
     private bool _disposed;
     private ushort[]? _lastHoldingValues;
     private bool[]? _lastCoilValues;
+    private readonly List<TcpClient> _connectedClients = new();
 
     /// <summary>
     /// 从站ID
@@ -97,6 +98,26 @@ public class ModbusTcpSlave : IDisposable
     public event Func<ushort, bool, Task>? OnCoilWrittenAsync;
 
     /// <summary>
+    /// 客户端连接事件 (客户端地址)
+    /// </summary>
+    public event Action<string>? OnClientConnected;
+
+    /// <summary>
+    /// 异步客户端连接事件 (客户端地址)
+    /// </summary>
+    public event Func<string, Task>? OnClientConnectedAsync;
+
+    /// <summary>
+    /// 客户端断开事件 (客户端地址)
+    /// </summary>
+    public event Action<string>? OnClientDisconnected;
+
+    /// <summary>
+    /// 异步客户端断开事件 (客户端地址)
+    /// </summary>
+    public event Func<string, Task>? OnClientDisconnectedAsync;
+
+    /// <summary>
     /// 创建 Modbus TCP 从站
     /// </summary>
     public ModbusTcpSlave(string ipAddress = "0.0.0.0", int port = 502, byte slaveId = 1)
@@ -156,6 +177,9 @@ public class ModbusTcpSlave : IDisposable
                 }
             });
 
+            // 监控客户端连接
+            _ = Task.Run(MonitorClientConnectionsAsync);
+
             // 监控数据变化
             _ = Task.Run(MonitorDataChangesAsync);
 
@@ -199,6 +223,90 @@ public class ModbusTcpSlave : IDisposable
         _slave.DataStore.CoilDiscretes.WritePoints(0, _lastCoilValues);
 
         Log($"已初始化模拟数据: {InitHoldingRegisterCount}个保持寄存器, {InitCoilCount}个线圈");
+    }
+
+    /// <summary>
+    /// 监控客户端连接
+    /// </summary>
+    private async Task MonitorClientConnectionsAsync()
+    {
+        while (_cts != null && !_cts.Token.IsCancellationRequested && _listener != null)
+        {
+            try
+            {
+                // 检查是否有新连接
+                if (_listener.Pending())
+                {
+                    var client = await _listener.AcceptTcpClientAsync(_cts.Token);
+                    var clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? "未知";
+                    
+                    lock (_connectedClients)
+                    {
+                        _connectedClients.Add(client);
+                    }
+                    
+                    Log($"客户端已连接: {clientEndpoint}");
+                    OnClientConnected?.Invoke(clientEndpoint);
+                    if (OnClientConnectedAsync != null)
+                    {
+                        await OnClientConnectedAsync.Invoke(clientEndpoint);
+                    }
+                }
+
+                // 检查已断开的连接
+                lock (_connectedClients)
+                {
+                    for (int i = _connectedClients.Count - 1; i >= 0; i--)
+                    {
+                        var client = _connectedClients[i];
+                        if (!IsClientConnected(client))
+                        {
+                            var clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? "未知";
+                            _connectedClients.RemoveAt(i);
+                            
+                            Log($"客户端已断开: {clientEndpoint}");
+                            OnClientDisconnected?.Invoke(clientEndpoint);
+                            OnClientDisconnectedAsync?.Invoke(clientEndpoint);
+                            
+                            client.Close();
+                        }
+                    }
+                }
+
+                await Task.Delay(500, _cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                Log($"客户端监控异常: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 检查客户端是否仍然连接
+    /// </summary>
+    private static bool IsClientConnected(TcpClient client)
+    {
+        try
+        {
+            if (client.Client == null || !client.Connected) return false;
+            
+            // Poll 检测连接状态
+            if (client.Client.Poll(0, SelectMode.SelectRead))
+            {
+                byte[] buff = new byte[1];
+                return client.Client.Receive(buff, SocketFlags.Peek) != 0;
+            }
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>

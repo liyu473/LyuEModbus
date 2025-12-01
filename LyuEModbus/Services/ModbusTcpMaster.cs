@@ -12,6 +12,7 @@ public class ModbusTcpMaster : IDisposable
     private IModbusMaster? _master;
     private bool _disposed;
     private CancellationTokenSource? _reconnectCts;
+    private CancellationTokenSource? _heartbeatCts;
     private bool _isReconnecting;
     private bool _isConnected;
 
@@ -54,6 +55,16 @@ public class ModbusTcpMaster : IDisposable
     /// 最大重连次数（0表示无限）
     /// </summary>
     public int MaxReconnectAttempts { get; internal set; } = 0;
+
+    /// <summary>
+    /// 是否启用心跳检测
+    /// </summary>
+    public bool EnableHeartbeat { get; internal set; } = false;
+
+    /// <summary>
+    /// 心跳间隔（毫秒）
+    /// </summary>
+    public int HeartbeatInterval { get; internal set; } = 5000;
 
     /// <summary>
     /// 是否已连接
@@ -149,6 +160,12 @@ public class ModbusTcpMaster : IDisposable
             IsReconnecting = false;
             IsConnected = true;
             Log($"已连接到 {IpAddress}:{Port}");
+
+            // 启动心跳检测
+            if (EnableHeartbeat)
+            {
+                StartHeartbeat();
+            }
         }
         catch (Exception ex)
         {
@@ -180,6 +197,7 @@ public class ModbusTcpMaster : IDisposable
     public void Disconnect()
     {
         StopReconnect();
+        StopHeartbeat();
 
         if (!IsConnected && _client == null)
         {
@@ -212,6 +230,101 @@ public class ModbusTcpMaster : IDisposable
         _reconnectCts?.Cancel();
         _reconnectCts = null;
         IsReconnecting = false;
+    }
+
+    /// <summary>
+    /// 启动心跳检测
+    /// </summary>
+    private void StartHeartbeat()
+    {
+        StopHeartbeat();
+        _heartbeatCts = new CancellationTokenSource();
+        
+        _ = Task.Run(async () =>
+        {
+            while (_heartbeatCts != null && !_heartbeatCts.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(HeartbeatInterval, _heartbeatCts.Token);
+                    
+                    if (!CheckConnection())
+                    {
+                        Log("心跳检测: 连接已断开");
+                        await HandleConnectionLostAsync();
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Log($"心跳检测异常: {ex.Message}");
+                }
+            }
+        });
+    }
+
+    /// <summary>
+    /// 停止心跳检测
+    /// </summary>
+    private void StopHeartbeat()
+    {
+        _heartbeatCts?.Cancel();
+        _heartbeatCts = null;
+    }
+
+    /// <summary>
+    /// 检查连接状态
+    /// </summary>
+    private bool CheckConnection()
+    {
+        try
+        {
+            if (_client?.Client == null || !_client.Connected) return false;
+            
+            // 使用 Poll 检测连接状态
+            if (_client.Client.Poll(0, SelectMode.SelectRead))
+            {
+                byte[] buff = new byte[1];
+                return _client.Client.Receive(buff, SocketFlags.Peek) != 0;
+            }
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 处理连接丢失
+    /// </summary>
+    private async Task HandleConnectionLostAsync()
+    {
+        // 避免重复处理
+        if (!_isConnected && IsReconnecting) return;
+        
+        StopHeartbeat();
+        
+        // 清理连接
+        try
+        {
+            _master?.Dispose();
+            _client?.Close();
+        }
+        catch { /* 忽略清理异常 */ }
+        
+        _master = null;
+        _client = null;
+        
+        IsConnected = false;
+
+        if (AutoReconnect && !IsReconnecting)
+        {
+            await StartReconnectAsync();
+        }
     }
 
     /// <summary>

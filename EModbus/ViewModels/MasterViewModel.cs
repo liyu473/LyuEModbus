@@ -26,12 +26,6 @@ public partial class MasterViewModel : ViewModelBase
     private MasterSettings masterSettings;
 
     [ObservableProperty]
-    private bool isMasterConnected;
-
-    [ObservableProperty]
-    private bool isReconnecting;
-
-    [ObservableProperty]
     private string masterStatus = "未连接";
 
     [ObservableProperty]
@@ -74,6 +68,18 @@ public partial class MasterViewModel : ViewModelBase
     [ObservableProperty]
     private int reconnectAttempt;
 
+    /// <summary>
+    /// 是否已连接（由 ModbusTcpMaster.OnConnectionChanged 事件更新）
+    /// </summary>
+    [ObservableProperty]
+    private bool isMasterConnected;
+
+    /// <summary>
+    /// 是否正在重连（由 ModbusTcpMaster.OnReconnecting 事件更新）
+    /// </summary>
+    [ObservableProperty]
+    private bool isReconnecting;
+
     [RelayCommand]
     private async Task ConnectMasterAsync()
     {
@@ -86,22 +92,17 @@ public partial class MasterViewModel : ViewModelBase
         try
         {
             _tcpMaster = ModbusTcpMaster.Create()
-                .WithAddress(MasterSettings.IpAddress, MasterSettings.Port)
-                .WithSlaveId(MasterSettings.SlaveId)
-                .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
-                .WithAutoReconnect(AutoReconnect)
-                .WithReconnectInterval(3000)
-                .WithMaxReconnectAttempts(10)
+                .WithSettings(MasterSettings)
+                .WithAutoReconnect(3000, 10)
                 .WithLog(msg => MasterLog = MasterLog.Append(msg + Environment.NewLine))
                 .WithConnectionChanged(connected =>
                 {
-                    IsMasterConnected = connected;
-                    IsReconnecting = _tcpMaster?.IsReconnecting ?? false;
-                    
+                    IsMasterConnected = connected;                    
                     if (connected)
                     {
                         MasterStatus = $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}";
                         ReconnectAttempt = 0;
+                        IsReconnecting = false;
                         _toastManager.ShowToast("连接成功", type: Notification.Success);
                     }
                     else
@@ -142,10 +143,10 @@ public partial class MasterViewModel : ViewModelBase
         {
             _tcpMaster?.Disconnect();
             _tcpMaster = null;
-            IsReconnecting = false;
             ReconnectAttempt = 0;
             MasterStatus = "未连接";
             IsMasterConnected = false;
+            IsReconnecting = false;
             _toastManager.ShowToast("主站已断开", type: Notification.Info);
         }
         catch (Exception ex)
@@ -165,9 +166,9 @@ public partial class MasterViewModel : ViewModelBase
         }
 
         _tcpMaster?.StopReconnect();
-        IsReconnecting = false;
         ReconnectAttempt = 0;
         MasterStatus = "未连接";
+        IsReconnecting = false;
         _toastManager.ShowToast("已停止重连", type: Notification.Info);
     }
 
@@ -180,16 +181,13 @@ public partial class MasterViewModel : ViewModelBase
             return;
         }
 
-        try
+        var dict = await _tcpMaster.ReadHoldingRegistersToDictAsync(ReadAddress, ReadCount,
+            ex => { _toastManager.ShowToast($"读取失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
+        
+        if (dict != null)
         {
-            var result = await _tcpMaster.ReadHoldingRegistersAsync(ReadAddress, ReadCount);
-            ReadResult = string.Join(", ", result);
+            ReadResult = string.Join(", ", dict.Values);
             _toastManager.ShowToast("读取成功", type: Notification.Success);
-        }
-        catch (Exception ex)
-        {
-            MasterLog = MasterLog.Append($"读取失败: {ex.Message}{Environment.NewLine}");
-            _toastManager.ShowToast($"读取失败: {ex.Message}", type: Notification.Error);
         }
     }
 
@@ -202,15 +200,12 @@ public partial class MasterViewModel : ViewModelBase
             return;
         }
 
-        try
+        var success = await _tcpMaster.WriteRegisterAsync(WriteAddress, WriteValue,
+            ex => { _toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
+        
+        if (success)
         {
-            await _tcpMaster.WriteSingleRegisterAsync(WriteAddress, WriteValue);
             _toastManager.ShowToast("写入成功", type: Notification.Success);
-        }
-        catch (Exception ex)
-        {
-            MasterLog = MasterLog.Append($"写入失败: {ex.Message}{Environment.NewLine}");
-            _toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error);
         }
     }
 
@@ -223,16 +218,13 @@ public partial class MasterViewModel : ViewModelBase
             return;
         }
 
-        try
+        var dict = await _tcpMaster.ReadCoilsToDictAsync(CoilReadAddress, CoilReadCount,
+            ex => { _toastManager.ShowToast($"读取线圈失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
+        
+        if (dict != null)
         {
-            var result = await _tcpMaster.ReadCoilsAsync(CoilReadAddress, CoilReadCount);
-            CoilReadResult = string.Join(", ", result);
+            CoilReadResult = string.Join(", ", dict.Values);
             _toastManager.ShowToast("读取线圈成功", type: Notification.Success);
-        }
-        catch (Exception ex)
-        {
-            MasterLog = MasterLog.Append($"读取线圈失败: {ex.Message}{Environment.NewLine}");
-            _toastManager.ShowToast($"读取失败: {ex.Message}", type: Notification.Error);
         }
     }
 
@@ -245,15 +237,12 @@ public partial class MasterViewModel : ViewModelBase
             return;
         }
 
-        try
+        var success = await _tcpMaster.WriteCoilAsync(CoilWriteAddress, CoilWriteValue,
+            ex => { _toastManager.ShowToast($"写入线圈失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
+        
+        if (success)
         {
-            await _tcpMaster.WriteSingleCoilAsync(CoilWriteAddress, CoilWriteValue);
             _toastManager.ShowToast($"写入线圈成功: {CoilWriteValue}", type: Notification.Success);
-        }
-        catch (Exception ex)
-        {
-            MasterLog = MasterLog.Append($"写入线圈失败: {ex.Message}{Environment.NewLine}");
-            _toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error);
         }
     }
 

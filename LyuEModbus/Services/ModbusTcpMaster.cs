@@ -18,27 +18,27 @@ public class ModbusTcpMaster : IDisposable
     /// <summary>
     /// 从站IP地址
     /// </summary>
-    public string IpAddress { get; internal set; } = "127.0.0.1";
+    public string? IpAddress { get; internal set; }
 
     /// <summary>
     /// 端口号
     /// </summary>
-    public int Port { get; internal set; } = 502;
+    public int? Port { get; internal set; }
 
     /// <summary>
     /// 从站ID
     /// </summary>
-    public byte SlaveId { get; internal set; } = 1;
+    public byte? SlaveId { get; internal set; }
 
     /// <summary>
     /// 读取超时（毫秒）
     /// </summary>
-    public int ReadTimeout { get; internal set; } = 3000;
+    public int? ReadTimeout { get; internal set; }
 
     /// <summary>
     /// 写入超时（毫秒）
     /// </summary>
-    public int WriteTimeout { get; internal set; } = 3000;
+    public int? WriteTimeout { get; internal set; }
 
     /// <summary>
     /// 是否启用自动重连
@@ -110,18 +110,6 @@ public class ModbusTcpMaster : IDisposable
     public event Func<int, Task>? OnReconnectingAsync;
 
     /// <summary>
-    /// 创建 Modbus TCP 主站
-    /// </summary>
-    public ModbusTcpMaster(string ipAddress = "127.0.0.1", int port = 502, byte slaveId = 1, int readTimeout = 3000, int writeTimeout = 3000)
-    {
-        IpAddress = ipAddress;
-        Port = port;
-        SlaveId = slaveId;
-        ReadTimeout = readTimeout;
-        WriteTimeout = writeTimeout;
-    }
-
-    /// <summary>
     /// 创建主站构建器
     /// </summary>
     public static ModbusTcpMaster Create() => new();
@@ -143,18 +131,20 @@ public class ModbusTcpMaster : IDisposable
 
     private async Task ConnectInternalAsync()
     {
+        ValidateConfiguration();
+        
         try
         {
             _client = new TcpClient();
-            await _client.ConnectAsync(IpAddress, Port);
+            await _client.ConnectAsync(IpAddress!, Port!.Value);
 
-            _client.ReceiveTimeout = ReadTimeout;
-            _client.SendTimeout = WriteTimeout;
+            _client.ReceiveTimeout = ReadTimeout!.Value;
+            _client.SendTimeout = WriteTimeout!.Value;
 
             var factory = new ModbusFactory();
             _master = factory.CreateMaster(_client);
-            _master.Transport.ReadTimeout = ReadTimeout;
-            _master.Transport.WriteTimeout = WriteTimeout;
+            _master.Transport.ReadTimeout = ReadTimeout.Value;
+            _master.Transport.WriteTimeout = WriteTimeout.Value;
 
             IsReconnecting = false;
             IsConnected = true;
@@ -165,6 +155,23 @@ public class ModbusTcpMaster : IDisposable
             Log($"连接失败: {ex.Message}");
             throw;
         }
+    }
+
+    /// <summary>
+    /// 验证配置是否完整
+    /// </summary>
+    private void ValidateConfiguration()
+    {
+        if (string.IsNullOrWhiteSpace(IpAddress))
+            throw new InvalidOperationException("未设置 IpAddress");
+        if (Port is null)
+            throw new InvalidOperationException("未设置 Port");
+        if (SlaveId is null)
+            throw new InvalidOperationException("未设置 SlaveId");
+        if (ReadTimeout is null)
+            throw new InvalidOperationException("未设置 ReadTimeout");
+        if (WriteTimeout is null)
+            throw new InvalidOperationException("未设置 WriteTimeout");
     }
 
     /// <summary>
@@ -297,7 +304,7 @@ public class ModbusTcpMaster : IDisposable
         Log($"读取线圈: 起始地址={startAddress}, 数量={numberOfPoints}");
         try
         {
-            var result = await _master!.ReadCoilsAsync(SlaveId, startAddress, numberOfPoints);
+            var result = await _master!.ReadCoilsAsync(SlaveId!.Value, startAddress, numberOfPoints);
             Log($"读取结果: [{string.Join(", ", result)}]");
             return result;
         }
@@ -319,7 +326,7 @@ public class ModbusTcpMaster : IDisposable
         Log($"读取离散输入: 起始地址={startAddress}, 数量={numberOfPoints}");
         try
         {
-            var result = await _master!.ReadInputsAsync(SlaveId, startAddress, numberOfPoints);
+            var result = await _master!.ReadInputsAsync(SlaveId!.Value, startAddress, numberOfPoints);
             Log($"读取结果: [{string.Join(", ", result)}]");
             return result;
         }
@@ -341,7 +348,7 @@ public class ModbusTcpMaster : IDisposable
         Log($"读取保持寄存器: 起始地址={startAddress}, 数量={numberOfPoints}");
         try
         {
-            var result = await _master!.ReadHoldingRegistersAsync(SlaveId, startAddress, numberOfPoints);
+            var result = await _master!.ReadHoldingRegistersAsync(SlaveId!.Value, startAddress, numberOfPoints);
             Log($"读取结果: [{string.Join(", ", result)}]");
             return result;
         }
@@ -363,7 +370,7 @@ public class ModbusTcpMaster : IDisposable
         Log($"读取输入寄存器: 起始地址={startAddress}, 数量={numberOfPoints}");
         try
         {
-            var result = await _master!.ReadInputRegistersAsync(SlaveId, startAddress, numberOfPoints);
+            var result = await _master!.ReadInputRegistersAsync(SlaveId!.Value, startAddress, numberOfPoints);
             Log($"读取结果: [{string.Join(", ", result)}]");
             return result;
         }
@@ -389,7 +396,7 @@ public class ModbusTcpMaster : IDisposable
         Log($"写入单个线圈: 地址={coilAddress}, 值={value}");
         try
         {
-            await _master!.WriteSingleCoilAsync(SlaveId, coilAddress, value);
+            await _master!.WriteSingleCoilAsync(SlaveId!.Value, coilAddress, value);
             Log("写入成功");
         }
         catch (Exception ex)
@@ -410,7 +417,7 @@ public class ModbusTcpMaster : IDisposable
         Log($"写入单个寄存器: 地址={registerAddress}, 值={value}");
         try
         {
-            await _master!.WriteSingleRegisterAsync(SlaveId, registerAddress, value);
+            await _master!.WriteSingleRegisterAsync(SlaveId!.Value, registerAddress, value);
             Log("写入成功");
         }
         catch (Exception ex)
@@ -431,7 +438,7 @@ public class ModbusTcpMaster : IDisposable
         Log($"写入多个线圈: 起始地址={startAddress}, 数量={data.Length}");
         try
         {
-            await _master!.WriteMultipleCoilsAsync(SlaveId, startAddress, data);
+            await _master!.WriteMultipleCoilsAsync(SlaveId!.Value, startAddress, data);
             Log("写入成功");
         }
         catch (Exception ex)
@@ -452,7 +459,7 @@ public class ModbusTcpMaster : IDisposable
         Log($"写入多个寄存器: 起始地址={startAddress}, 数量={data.Length}");
         try
         {
-            await _master!.WriteMultipleRegistersAsync(SlaveId, startAddress, data);
+            await _master!.WriteMultipleRegistersAsync(SlaveId!.Value, startAddress, data);
             Log("写入成功");
         }
         catch (Exception ex)

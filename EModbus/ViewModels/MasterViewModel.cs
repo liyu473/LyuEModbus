@@ -108,8 +108,11 @@ public partial class MasterViewModel : ViewModelBase
                     }
                     else
                     {
-                        MasterStatus = IsReconnecting ? "重连中..." : "未连接";
-                        if (!IsReconnecting)
+                        // 从 _tcpMaster 读取实际的重连状态
+                        var isReconnecting = _tcpMaster?.IsReconnecting ?? false;
+                        IsReconnecting = isReconnecting;
+                        MasterStatus = isReconnecting ? "重连中..." : "未连接";
+                        if (!isReconnecting)
                         {
                             _toastManager.ShowToast("连接已断开", type: Notification.Warning);
                         }

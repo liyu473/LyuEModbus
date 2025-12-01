@@ -1,44 +1,82 @@
 <UserControl
-    x:Class="EModbus.Views.HomePage"
-    xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:EModbus.ViewModels"
-    xmlns:views="clr-namespace:EModbus.Views"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
-    x:DataType="vm:HomeViewModel"
-    mc:Ignorable="d">
-    <DockPanel LastChildFill="True">
-        <StackPanel
-            MaxWidth="{StaticResource PageMaxWidth}"
-            Margin="{StaticResource PageMargin}"
-            DockPanel.Dock="Top"
-            Spacing="4">
-            <TextBlock Classes="Title" Text="Home" />
-            <TextBlock
-                Classes="p"
-                Text="用于LyuEModbus主站（Master）与从站（Slave）测试"
-                TextWrapping="Wrap" />
-        </StackPanel>
+x:Class="EModbus.Views.HomePage"
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:vm="clr-namespace:EModbus.ViewModels"
+xmlns:views="clr-namespace:EModbus.Views"
+d:DesignHeight="450"
+d:DesignWidth="800"
+x:DataType="vm:HomeViewModel"
+mc:Ignorable="d">
+	<DockPanel LastChildFill="True">
+		<StackPanel
+		HorizontalAlignment="Stretch"
+		MaxWidth="{StaticResource PageMaxWidth}"
+		Margin="{StaticResource PageMargin}"
+		DockPanel.Dock="Top"
+		Spacing="4">
+			<Grid HorizontalAlignment="Stretch">
+				
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto" />
+					<ColumnDefinition Width="*" />
+				</Grid.ColumnDefinitions>
 
-        <ScrollViewer>
-            <StackPanel
-                MaxWidth="{StaticResource PageMaxWidth}"
-                Margin="{StaticResource PageMargin}"
-                Spacing="32">
-                <TabControl>
-                    <TabControl.Items>
-                        <TabItem Header="Slave">
-                            <views:SlaveView DataContext="{Binding SlaveViewModel}" />
-                        </TabItem>
-                        <TabItem Header="Master">
-                            <views:MasterView DataContext="{Binding MasterViewModel}" />
-                        </TabItem>
-                    </TabControl.Items>
-                </TabControl>
-            </StackPanel>
-        </ScrollViewer>
-    </DockPanel>
+				<StackPanel Spacing="4" Grid.Column="0">
+					<TextBlock Classes="Title" Text="Home" />
+					<TextBlock
+					Classes="p"
+					Text="用于LyuEModbus主站（Master）与从站（Slave）测试"
+					TextWrapping="Wrap" />
+				</StackPanel>
+				<StackPanel
+				Grid.Column="1"
+				VerticalAlignment="Bottom"
+				Orientation="Horizontal"
+				HorizontalAlignment="Right"
+				Spacing="8">
+					<Button
+					Background="{DynamicResource GhostHoverColor}"
+					Classes="Icon"
+					Command="{Binding BackToSlaveCommand}"
+					Height="28"
+					Width="28">
+						<Viewbox Margin="6">
+							<TextBlock Classes="LucideIcon" Text="&#57420;" />
+						</Viewbox>
+					</Button>
+					<Button
+					Background="{DynamicResource GhostHoverColor}"
+					Classes="Icon"
+					Command="{Binding NextToMasterCommand}"
+					Height="28"
+					Width="28">
+						<Viewbox Margin="6">
+							<TextBlock Classes="LucideIcon" Text="&#57421;" />
+						</Viewbox>
+					</Button>
+				</StackPanel>
+			</Grid>
+		</StackPanel>
+
+		<ScrollViewer>
+			<StackPanel
+			MaxWidth="{StaticResource PageMaxWidth}"
+			Margin="{StaticResource PageMargin}"
+			Spacing="32">
+				<TabControl SelectedIndex="{Binding TabSelectedIndex}">
+					<TabControl.Items>
+						<TabItem Header="Slave">
+							<views:SlaveView DataContext="{Binding SlaveViewModel}" />
+						</TabItem>
+						<TabItem Header="Master">
+							<views:MasterView DataContext="{Binding MasterViewModel}" />
+						</TabItem>
+					</TabControl.Items>
+				</TabControl>
+			</StackPanel>
+		</ScrollViewer>
+	</DockPanel>
 </UserControl>

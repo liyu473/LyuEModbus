@@ -1,5 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using EModbus.Extensions;
+using CommunityToolkit.Mvvm.Input;
 using EModbus.Model;
 
 namespace EModbus.ViewModels;
@@ -18,4 +18,19 @@ public partial class HomeViewModel : ViewModelBase, INavigable
 
     [ObservableProperty]
     public partial MasterViewModel MasterViewModel { get; set; }
+
+    [ObservableProperty]
+    public partial int TabSelectedIndex { get; set; } = 0;
+
+    [RelayCommand]
+    private void BackToSlave()
+    {
+        TabSelectedIndex = 0;
+    }
+
+    [RelayCommand]
+    private void NextToMaster()
+    {
+        TabSelectedIndex = 1;
+    }
 }

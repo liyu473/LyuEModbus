@@ -242,6 +242,7 @@ public class ModbusTcpMaster : IDisposable
         
         _ = Task.Run(async () =>
         {
+            Log("心跳检测已启动");
             while (_heartbeatCts != null && !_heartbeatCts.Token.IsCancellationRequested)
             {
                 try
@@ -252,6 +253,7 @@ public class ModbusTcpMaster : IDisposable
                     {
                         Log("心跳检测: 连接已断开");
                         await HandleConnectionLostAsync();
+                        return; // 检测到断开后退出心跳循环
                     }
                 }
                 catch (OperationCanceledException)
@@ -263,6 +265,7 @@ public class ModbusTcpMaster : IDisposable
                     Log($"心跳检测异常: {ex.Message}");
                 }
             }
+            Log("心跳检测已停止");
         });
     }
 
@@ -318,10 +321,16 @@ public class ModbusTcpMaster : IDisposable
         
         _master = null;
         _client = null;
+
+        // 先设置重连状态，再触发断开事件，这样 ViewModel 可以正确显示"重连中"
+        if (AutoReconnect)
+        {
+            IsReconnecting = true;
+        }
         
         IsConnected = false;
 
-        if (AutoReconnect && !IsReconnecting)
+        if (AutoReconnect)
         {
             await StartReconnectAsync();
         }
@@ -332,7 +341,10 @@ public class ModbusTcpMaster : IDisposable
     /// </summary>
     private async Task StartReconnectAsync()
     {
-        if (!AutoReconnect || IsReconnecting) return;
+        if (!AutoReconnect) return;
+        
+        // 如果已经在重连中，不重复启动
+        if (_reconnectCts != null && !_reconnectCts.IsCancellationRequested) return;
 
         IsReconnecting = true;
         _reconnectCts = new CancellationTokenSource();

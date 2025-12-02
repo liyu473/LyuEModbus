@@ -280,21 +280,21 @@ public class ModbusPollerGroup : IDisposable
     }
 
     /// <summary>
-    /// 启用指定任务
+    /// 暂停指定任务
     /// </summary>
-    public void Enable(string name)
-    {
-        if (_tasks.TryGetValue(name, out var task))
-            task.IsEnabled = true;
-    }
-
-    /// <summary>
-    /// 禁用指定任务（不移除，只是跳过执行）
-    /// </summary>
-    public void Disable(string name)
+    public void Pause(string name)
     {
         if (_tasks.TryGetValue(name, out var task))
             task.IsEnabled = false;
+    }
+
+    /// <summary>
+    /// 继续指定任务
+    /// </summary>
+    public void Resume(string name)
+    {
+        if (_tasks.TryGetValue(name, out var task))
+            task.IsEnabled = true;
     }
 
     /// <summary>
@@ -303,10 +303,10 @@ public class ModbusPollerGroup : IDisposable
     public bool Remove(string name) => _tasks.TryRemove(name, out _);
 
     /// <summary>
-    /// 检查任务是否启用
+    /// 检查任务是否暂停
     /// </summary>
-    public bool IsEnabled(string name) =>
-        _tasks.TryGetValue(name, out var task) && task.IsEnabled;
+    public bool IsPausedTask(string name) =>
+        _tasks.TryGetValue(name, out var task) && !task.IsEnabled;
 
     #endregion
 

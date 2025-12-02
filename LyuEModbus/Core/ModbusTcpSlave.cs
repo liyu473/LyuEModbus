@@ -30,15 +30,32 @@ internal class ModbusTcpSlave : ModbusSlaveBase
     private void ValidateOptions()
     {
         if (string.IsNullOrWhiteSpace(_options.IpAddress))
-            throw new InvalidOperationException("未配置监听 IP 地址");
+            throw new InvalidOperationException("未配置监听 IP 地址，请先调用 WithEndpoint()");
         if (!_options.Port.HasValue)
-            throw new InvalidOperationException("未配置监听端口");
+            throw new InvalidOperationException("未配置监听端口，请先调用 WithEndpoint()");
         if (!_options.SlaveId.HasValue)
-            throw new InvalidOperationException("未配置从站 ID");
+            throw new InvalidOperationException("未配置从站 ID，请先调用 WithSlaveId()");
         if (!_options.InitHoldingRegisterCount.HasValue)
-            throw new InvalidOperationException("未配置初始保持寄存器数量");
+            throw new InvalidOperationException("未配置初始保持寄存器数量，请先调用 WithDataStore()");
         if (!_options.InitCoilCount.HasValue)
-            throw new InvalidOperationException("未配置初始线圈数量");
+            throw new InvalidOperationException("未配置初始线圈数量，请先调用 WithDataStore()");
+    }
+
+    internal void ConfigureEndpoint(string ipAddress, int port)
+    {
+        _options.IpAddress = ipAddress;
+        _options.Port = port;
+    }
+
+    internal void ConfigureSlaveId(byte slaveId)
+    {
+        _options.SlaveId = slaveId;
+    }
+
+    internal void ConfigureDataStore(ushort holdingRegisterCount, ushort coilCount)
+    {
+        _options.InitHoldingRegisterCount = holdingRegisterCount;
+        _options.InitCoilCount = coilCount;
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken = default)

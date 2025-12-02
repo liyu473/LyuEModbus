@@ -40,7 +40,7 @@ public class EModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory
         return master;
     }
 
-    public IModbusSlaveClient CreateTcpSlave(string name, ModbusSlaveOptions options)
+    public IModbusSlaveClient CreateTcpSlave(string name, ModbusSlaveOptions? options = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("名称不能为空", nameof(name));
@@ -48,7 +48,7 @@ public class EModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory
             throw new InvalidOperationException($"名为 '{name}' 的从站已存在");
 
         var logger = _loggerFactory.CreateLogger($"Slave:{name}");
-        var slave = new ModbusTcpSlave(name, options, logger);
+        var slave = new ModbusTcpSlave(name, options ?? new ModbusSlaveOptions(), logger);
 
         if (!_slaves.TryAdd(name, slave))
         {

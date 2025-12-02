@@ -8,7 +8,7 @@ namespace LyuEModbus.Abstractions;
 public interface IModbusFactory
 {
     IModbusMasterClient CreateTcpMaster(string name, ModbusMasterOptions? options = null);
-    IModbusSlaveClient CreateTcpSlave(string name, ModbusSlaveOptions options);
+    IModbusSlaveClient CreateTcpSlave(string name, ModbusSlaveOptions? options = null);
     IModbusMasterClient? GetMaster(string name);
     IModbusSlaveClient? GetSlave(string name);
     IEnumerable<IModbusMasterClient> GetAllMasters();

@@ -7,6 +7,7 @@ using EModbus.Extensions;
 using EModbus.Model;
 using Extensions;
 using LyuEModbus.Abstractions;
+using LyuEModbus.Extensions;
 using LyuEModbus.Factory;
 using ShadUI;
 
@@ -110,42 +111,33 @@ public partial class SlaveViewModel : ViewModelBase
         {
             _factory.RemoveSlave("main");
             
-            _tcpSlave = _factory.CreateTcpSlave("main", new LyuEModbus.Models.ModbusSlaveOptions
-            {
-                IpAddress = SlaveSettings.IpAddress,
-                Port = SlaveSettings.Port,
-                SlaveId = SlaveSettings.SlaveId,
-                InitHoldingRegisterCount = (ushort)HoldingRegisters.Count,
-                InitCoilCount = (ushort)Coils.Count
-            });
-            
-            _tcpSlave.RunningChanged += running =>
-            {
-                IsSlaveRunning = running;
-                SlaveStatus = running 
-                    ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" 
-                    : "已停止";
-            };
-            
-            _tcpSlave.HoldingRegisterWritten += (address, oldValue, newValue) =>
-            {
-                if (address < HoldingRegisters.Count)
-                    HoldingRegisters[address].Value = newValue;
-                _toastManager.ShowToast($"寄存器[{address}]: {oldValue} → {newValue}", type: Notification.Info);
-            };
-            
-            _tcpSlave.CoilWritten += (address, value) =>
-            {
-                if (address < Coils.Count)
-                    Coils[address].Value = value;
-                _toastManager.ShowToast($"线圈[{address}]: {value}", type: Notification.Info);
-            };
-            
-            _tcpSlave.ClientConnected += client =>
-                _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success);
-            
-            _tcpSlave.ClientDisconnected += client =>
-                _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning);
+            _tcpSlave = _factory.CreateTcpSlave("main")
+                .WithEndpoint(SlaveSettings.IpAddress, SlaveSettings.Port)
+                .WithSlaveId(SlaveSettings.SlaveId)
+                .WithDataStore((ushort)HoldingRegisters.Count, (ushort)Coils.Count)
+                .OnRunningChanged(running =>
+                {
+                    IsSlaveRunning = running;
+                    SlaveStatus = running 
+                        ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" 
+                        : "已停止";
+                })
+                .OnHoldingRegisterWritten((address, oldValue, newValue) =>
+                {
+                    if (address < HoldingRegisters.Count)
+                        HoldingRegisters[address].Value = newValue;
+                    _toastManager.ShowToast($"寄存器[{address}]: {oldValue} → {newValue}", type: Notification.Info);
+                })
+                .OnCoilWritten((address, value) =>
+                {
+                    if (address < Coils.Count)
+                        Coils[address].Value = value;
+                    _toastManager.ShowToast($"线圈[{address}]: {value}", type: Notification.Info);
+                })
+                .OnClientConnected(client =>
+                    _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success))
+                .OnClientDisconnected(client =>
+                    _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning));
 
             await _tcpSlave.StartAsync();
 

@@ -15,7 +15,7 @@ namespace EModbus.ViewModels;
 
 public partial class MasterViewModel(ToastManager toastManager, ModbusSettings settings) : ViewModelBase
 {
-    private readonly ModbusFactory _factory = ModbusFactory.Default;
+    private readonly EModbusFactory _factory = EModbusFactory.Default;
     private IModbusMasterClient? _tcpMaster;
 
     [ObservableProperty] public partial MasterSettings MasterSettings { get; set; } = settings.Master;
@@ -49,45 +49,39 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
         {
             _factory.RemoveMaster("main");
             
-            _tcpMaster = _factory.CreateTcpMaster("main", opt =>
-            {
-                opt.FromSettings(MasterSettings);
-                opt.AutoReconnect = true;
-                opt.ReconnectInterval = 3000;
-                opt.MaxReconnectAttempts = 10;
-                opt.EnableHeartbeat = true;
-                opt.HeartbeatInterval = 3000;
-            });
-            
-            _tcpMaster.StateChanged += state =>
-            {
-                IsMasterConnected = state == ModbusConnectionState.Connected;
-                IsReconnecting = state == ModbusConnectionState.Reconnecting;
-                
-                MasterStatus = state switch
+            _tcpMaster = _factory.CreateTcpMaster("main")
+                .WithEndpoint(MasterSettings.IpAddress, MasterSettings.Port)
+                .WithSlaveId(MasterSettings.SlaveId)
+                .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
+                .OnStateChanged(state =>
                 {
-                    ModbusConnectionState.Connected => $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
-                    ModbusConnectionState.Reconnecting => $"重连中... ({ReconnectAttempt}/10)",
-                    ModbusConnectionState.Connecting => "连接中...",
-                    _ => "未连接"
-                };
-                
-                if (state == ModbusConnectionState.Connected)
+                    IsMasterConnected = state == ModbusConnectionState.Connected;
+                    IsReconnecting = state == ModbusConnectionState.Reconnecting;
+                    
+                    MasterStatus = state switch
+                    {
+                        ModbusConnectionState.Connected => $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
+                        ModbusConnectionState.Reconnecting => $"重连中... ({ReconnectAttempt}/10)",
+                        ModbusConnectionState.Connecting => "连接中...",
+                        _ => "未连接"
+                    };
+                    
+                    if (state == ModbusConnectionState.Connected)
+                    {
+                        ReconnectAttempt = 0;
+                        toastManager.ShowToast("连接成功", type: Notification.Success);
+                    }
+                    else if (state == ModbusConnectionState.Disconnected && !IsReconnecting)
+                    {
+                        toastManager.ShowToast("连接已断开", type: Notification.Warning);
+                    }
+                })
+                .OnReconnecting(attempt =>
                 {
-                    ReconnectAttempt = 0;
-                    toastManager.ShowToast("连接成功", type: Notification.Success);
-                }
-                else if (state == ModbusConnectionState.Disconnected && !IsReconnecting)
-                {
-                    toastManager.ShowToast("连接已断开", type: Notification.Warning);
-                }
-            };
-            
-            _tcpMaster.Reconnecting += attempt =>
-            {
-                ReconnectAttempt = attempt;
-                MasterStatus = $"重连中... ({attempt}/10)";
-            };
+                    ReconnectAttempt = attempt;
+                    MasterStatus = $"重连中... ({attempt}/10)";
+                }, intervalMs: 3000, maxAttempts: 10)
+                .OnHeartbeat(() => { }, intervalMs: 3000);
 
             await _tcpMaster.ConnectAsync();
         }

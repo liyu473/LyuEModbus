@@ -9,27 +9,20 @@ namespace LyuEModbus.Factory;
 /// <summary>
 /// Modbus 工厂实现
 /// </summary>
-public class ModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory, IDisposable
+public class EModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory, IDisposable
 {
     private readonly IModbusLoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
     private readonly ConcurrentDictionary<string, IModbusMasterClient> _masters = new();
     private readonly ConcurrentDictionary<string, IModbusSlaveClient> _slaves = new();
     private bool _disposed;
 
-    public static ModbusFactory Default { get; } = new(new ConsoleModbusLoggerFactory());
+    public static EModbusFactory Default { get; } = new(new ConsoleModbusLoggerFactory());
 
-    public ModbusFactory() : this(NullModbusLoggerFactory.Instance) { }
+    public EModbusFactory() : this(NullModbusLoggerFactory.Instance) { }
 
     #region 工厂实现
 
-    public IModbusMasterClient CreateTcpMaster(string name, Action<ModbusMasterOptions> configure)
-    {
-        var options = new ModbusMasterOptions();
-        configure(options);
-        return CreateTcpMaster(name, options);
-    }
-
-    public IModbusMasterClient CreateTcpMaster(string name, ModbusMasterOptions options)
+    public IModbusMasterClient CreateTcpMaster(string name, ModbusMasterOptions? options = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("名称不能为空", nameof(name));
@@ -37,7 +30,7 @@ public class ModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory,
             throw new InvalidOperationException($"名为 '{name}' 的主站已存在");
 
         var logger = _loggerFactory.CreateLogger($"Master:{name}");
-        var master = new ModbusTcpMaster(name, options, logger);
+        var master = new ModbusTcpMaster(name, options ?? new ModbusMasterOptions(), logger);
 
         if (!_masters.TryAdd(name, master))
         {
@@ -45,13 +38,6 @@ public class ModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory,
             throw new InvalidOperationException($"名为 '{name}' 的主站已存在");
         }
         return master;
-    }
-
-    public IModbusSlaveClient CreateTcpSlave(string name, Action<ModbusSlaveOptions> configure)
-    {
-        var options = new ModbusSlaveOptions();
-        configure(options);
-        return CreateTcpSlave(name, options);
     }
 
     public IModbusSlaveClient CreateTcpSlave(string name, ModbusSlaveOptions options)

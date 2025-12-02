@@ -15,7 +15,7 @@ namespace EModbus.ViewModels;
 public partial class SlaveViewModel : ViewModelBase
 {
     private readonly ToastManager _toastManager;
-    private readonly ModbusFactory _factory = ModbusFactory.Default;
+    private readonly EModbusFactory _factory = EModbusFactory.Default;
     private IModbusSlaveClient? _tcpSlave;
 
     public SlaveViewModel(ToastManager toastManager, ModbusSettings settings)
@@ -110,11 +110,13 @@ public partial class SlaveViewModel : ViewModelBase
         {
             _factory.RemoveSlave("main");
             
-            _tcpSlave = _factory.CreateTcpSlave("main", opt =>
+            _tcpSlave = _factory.CreateTcpSlave("main", new LyuEModbus.Models.ModbusSlaveOptions
             {
-                opt.FromSettings(SlaveSettings);
-                opt.InitHoldingRegisterCount = (ushort)HoldingRegisters.Count;
-                opt.InitCoilCount = (ushort)Coils.Count;
+                IpAddress = SlaveSettings.IpAddress,
+                Port = SlaveSettings.Port,
+                SlaveId = SlaveSettings.SlaveId,
+                InitHoldingRegisterCount = (ushort)HoldingRegisters.Count,
+                InitCoilCount = (ushort)Coils.Count
             });
             
             _tcpSlave.RunningChanged += running =>

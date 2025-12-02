@@ -99,6 +99,37 @@ internal class ModbusTcpMaster : ModbusMasterBase
         _reconnectCts = null;
     }
 
+    internal void ConfigureEndpoint(string ipAddress, int port)
+    {
+        _options.IpAddress = ipAddress;
+        _options.Port = port;
+    }
+
+    internal void ConfigureSlaveId(byte slaveId)
+    {
+        _options.SlaveId = slaveId;
+        SlaveId = slaveId;
+    }
+
+    internal void ConfigureTimeout(int readTimeoutMs, int writeTimeoutMs)
+    {
+        _options.ReadTimeout = readTimeoutMs;
+        _options.WriteTimeout = writeTimeoutMs;
+    }
+
+    internal void ConfigureReconnect(bool enabled, int intervalMs = 5000, int maxAttempts = 0)
+    {
+        _options.AutoReconnect = enabled;
+        _options.ReconnectInterval = intervalMs;
+        _options.MaxReconnectAttempts = maxAttempts;
+    }
+
+    internal void ConfigureHeartbeat(bool enabled, int intervalMs = 5000)
+    {
+        _options.EnableHeartbeat = enabled;
+        _options.HeartbeatInterval = intervalMs;
+    }
+
     private void StartHeartbeat()
     {
         StopHeartbeat();

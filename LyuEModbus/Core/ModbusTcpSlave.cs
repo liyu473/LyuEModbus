@@ -1,7 +1,6 @@
 using LyuEModbus.Models;
 using NModbus;
 using System.Net.Sockets;
-using LyuEModbus.Abstractions;
 
 namespace LyuEModbus.Core;
 
@@ -23,24 +22,39 @@ internal class ModbusTcpSlave : ModbusSlaveBase
     public override string Address => $"{_options.IpAddress}:{_options.Port}";
 
     internal ModbusTcpSlave(string name, ModbusSlaveOptions options, IModbusLogger logger)
-        : base(name, options.SlaveId, logger)
+        : base(name, options.SlaveId ?? 1, logger)
     {
         _options = options;
+    }
+
+    private void ValidateOptions()
+    {
+        if (string.IsNullOrWhiteSpace(_options.IpAddress))
+            throw new InvalidOperationException("未配置监听 IP 地址");
+        if (!_options.Port.HasValue)
+            throw new InvalidOperationException("未配置监听端口");
+        if (!_options.SlaveId.HasValue)
+            throw new InvalidOperationException("未配置从站 ID");
+        if (!_options.InitHoldingRegisterCount.HasValue)
+            throw new InvalidOperationException("未配置初始保持寄存器数量");
+        if (!_options.InitCoilCount.HasValue)
+            throw new InvalidOperationException("未配置初始线圈数量");
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (IsRunning) return;
+        ValidateOptions();
 
         try
         {
-            var ip = System.Net.IPAddress.Parse(_options.IpAddress);
-            _listener = new TcpListener(ip, _options.Port);
+            var ip = System.Net.IPAddress.Parse(_options.IpAddress!);
+            _listener = new TcpListener(ip, _options.Port!.Value);
             _listener.Start();
 
             var factory = new ModbusFactory();
             _slaveNetwork = factory.CreateSlaveNetwork(_listener);
-            InternalSlave = factory.CreateSlave(_options.SlaveId);
+            InternalSlave = factory.CreateSlave(_options.SlaveId!.Value);
             _slaveNetwork.AddSlave(InternalSlave);
 
             InitializeData();
@@ -70,12 +84,12 @@ internal class ModbusTcpSlave : ModbusSlaveBase
     {
         if (InternalSlave?.DataStore == null) return;
 
-        _lastHoldingValues = new ushort[_options.InitHoldingRegisterCount];
+        _lastHoldingValues = new ushort[_options.InitHoldingRegisterCount!.Value];
         for (int i = 0; i < _lastHoldingValues.Length; i++)
             _lastHoldingValues[i] = (ushort)(i * 10);
         InternalSlave.DataStore.HoldingRegisters.WritePoints(0, _lastHoldingValues);
 
-        _lastCoilValues = new bool[_options.InitCoilCount];
+        _lastCoilValues = new bool[_options.InitCoilCount!.Value];
         for (int i = 0; i < _lastCoilValues.Length; i++)
             _lastCoilValues[i] = i % 2 == 0;
         InternalSlave.DataStore.CoilDiscretes.WritePoints(0, _lastCoilValues);

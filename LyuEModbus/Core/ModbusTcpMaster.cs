@@ -22,7 +22,8 @@ internal class ModbusTcpMaster : ModbusMasterBase
         : base(name, logger)
     {
         _options = options;
-        SlaveId = options.SlaveId;
+        if (options.SlaveId.HasValue)
+            SlaveId = options.SlaveId.Value;
     }
 
     public override async Task ConnectAsync(CancellationToken cancellationToken = default)
@@ -32,7 +33,20 @@ internal class ModbusTcpMaster : ModbusMasterBase
             Logger.Log(LoggingLevel.Debug, "已连接，跳过");
             return;
         }
+        ValidateOptions();
         await ConnectInternalAsync(cancellationToken);
+    }
+
+    private void ValidateOptions()
+    {
+        if (string.IsNullOrWhiteSpace(_options.IpAddress))
+            throw new InvalidOperationException("未配置 IP 地址，请先调用 WithEndpoint()");
+        if (!_options.Port.HasValue)
+            throw new InvalidOperationException("未配置端口，请先调用 WithEndpoint()");
+        if (!_options.SlaveId.HasValue)
+            throw new InvalidOperationException("未配置从站 ID，请先调用 WithSlaveId()");
+        if (!_options.ReadTimeout.HasValue || !_options.WriteTimeout.HasValue)
+            throw new InvalidOperationException("未配置超时时间，请先调用 WithTimeout()");
     }
 
     private async Task ConnectInternalAsync(CancellationToken cancellationToken = default)
@@ -42,15 +56,15 @@ internal class ModbusTcpMaster : ModbusMasterBase
         try
         {
             _client = new TcpClient();
-            await _client.ConnectAsync(_options.IpAddress, _options.Port, cancellationToken);
+            await _client.ConnectAsync(_options.IpAddress!, _options.Port!.Value, cancellationToken);
 
-            _client.ReceiveTimeout = _options.ReadTimeout;
-            _client.SendTimeout = _options.WriteTimeout;
+            _client.ReceiveTimeout = _options.ReadTimeout!.Value;
+            _client.SendTimeout = _options.WriteTimeout!.Value;
 
             var factory = new ModbusFactory();
             InternalMaster = factory.CreateMaster(_client);
-            InternalMaster.Transport.ReadTimeout = _options.ReadTimeout;
-            InternalMaster.Transport.WriteTimeout = _options.WriteTimeout;
+            InternalMaster.Transport.ReadTimeout = _options.ReadTimeout!.Value;
+            InternalMaster.Transport.WriteTimeout = _options.WriteTimeout!.Value;
 
             State = ModbusConnectionState.Connected;
             Logger.Log(LoggingLevel.Information, $"已连接到 {Address}");
@@ -108,7 +122,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
     internal void ConfigureSlaveId(byte slaveId)
     {
         _options.SlaveId = slaveId;
-        SlaveId = slaveId;
+        base.SlaveId = slaveId;
     }
 
     internal void ConfigureTimeout(int readTimeoutMs, int writeTimeoutMs)

@@ -5,14 +5,14 @@ namespace LyuEModbus.Models;
 /// </summary>
 public class ModbusMasterOptions
 {
-    public string IpAddress { get; set; } = "127.0.0.1";
-    public int Port { get; set; } = 502;
-    public byte SlaveId { get; set; } = 1;
-    public int ReadTimeout { get; set; } = 3000;
-    public int WriteTimeout { get; set; } = 3000;
-    public bool AutoReconnect { get; set; } = false;
-    public int ReconnectInterval { get; set; } = 5000;
-    public int MaxReconnectAttempts { get; set; } = 0;
-    public bool EnableHeartbeat { get; set; } = false;
-    public int HeartbeatInterval { get; set; } = 5000;
+    public string? IpAddress { get; set; }
+    public int? Port { get; set; }
+    public byte? SlaveId { get; set; }
+    public int? ReadTimeout { get; set; }
+    public int? WriteTimeout { get; set; }
+    public bool AutoReconnect { get; set; }
+    public int ReconnectInterval { get; set; }
+    public int MaxReconnectAttempts { get; set; }
+    public bool EnableHeartbeat { get; set; }
+    public int HeartbeatInterval { get; set; }
 }

@@ -2,7 +2,6 @@
   <Folder Name="/解决方案项/">
     <File Path="Directory.Packages.props" />
   </Folder>
-  <Project Path="../Extensions/Extensions/Extensions.csproj" />
   <Project Path="EModbus.Desktop/EModbus.Desktop.csproj" />
   <Project Path="EModbus/EModbus.csproj" />
   <Project Path="LyuEModbus/LyuEModbus.csproj" />

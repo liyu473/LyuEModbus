@@ -6,8 +6,8 @@ using CommunityToolkit.Mvvm.Input;
 using EModbus.Extensions;
 using EModbus.Model;
 using Extensions;
-using LyuEModbus.Extensions;
-using LyuEModbus.Services;
+using LyuEModbus.Abstractions;
+using LyuEModbus.Factory;
 using ShadUI;
 
 namespace EModbus.ViewModels;
@@ -15,7 +15,8 @@ namespace EModbus.ViewModels;
 public partial class SlaveViewModel : ViewModelBase
 {
     private readonly ToastManager _toastManager;
-    private ModbusTcpSlave? _tcpSlave;
+    private readonly ModbusClientFactory _factory = ModbusClientFactory.Default;
+    private IModbusSlave? _tcpSlave;
 
     public SlaveViewModel(ToastManager toastManager, ModbusSettings settings)
     {
@@ -43,21 +44,10 @@ public partial class SlaveViewModel : ViewModelBase
     [ObservableProperty]
     public partial string SlaveLog { get; set; } = string.Empty;
 
-
-
-    /// <summary>
-    /// 保持寄存器列表
-    /// </summary>
     public ObservableCollection<RegisterItem> HoldingRegisters { get; } = [];
 
-    /// <summary>
-    /// 线圈列表
-    /// </summary>
     public ObservableCollection<CoilItem> Coils { get; } = [];
 
-    /// <summary>
-    /// 初始化寄存器数量
-    /// </summary>
     [ObservableProperty]
     public partial int RegisterCount { get; set; } = 20;
 
@@ -108,7 +98,6 @@ public partial class SlaveViewModel : ViewModelBase
             return;
         }
 
-        // 从从站读取当前值并更新到列表
         var regValues = _tcpSlave.ReadHoldingRegisters(0, (ushort)HoldingRegisters.Count);
         if (regValues != null)
         {
@@ -132,43 +121,53 @@ public partial class SlaveViewModel : ViewModelBase
 
         try
         {
-            _tcpSlave = ModbusTcpSlave.Create()
-                .WithAddress(SlaveSettings.IpAddress, SlaveSettings.Port)
-                .WithSlaveId(SlaveSettings.SlaveId)
-                .WithInitHoldingRegisters((ushort)HoldingRegisters.Count)
-                .WithInitCoils((ushort)Coils.Count)
-                .WithLog(msg => SlaveLog = SlaveLog.Append(msg + Environment.NewLine))
-                .WithStatusChanged(running =>
+            // 移除旧的从站
+            _factory.RemoveSlave("main");
+            
+            // 创建新的从站
+            _tcpSlave = _factory.CreateTcpSlave("main", opt =>
+            {
+                opt.FromSettings(SlaveSettings);
+                opt.InitHoldingRegisterCount = (ushort)HoldingRegisters.Count;
+                opt.InitCoilCount = (ushort)Coils.Count;
+            });
+            
+            // 订阅事件
+            _tcpSlave.StateChanged += state =>
+            {
+                IsSlaveRunning = state == ModbusConnectionState.Connected;
+                SlaveStatus = state == ModbusConnectionState.Connected 
+                    ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" 
+                    : "已停止";
+            };
+            
+            _tcpSlave.HoldingRegisterWritten += (address, oldValue, newValue) =>
+            {
+                if (address < HoldingRegisters.Count)
                 {
-                    IsSlaveRunning = running;
-                    SlaveStatus = running ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" : "已停止";
-                })
-                .WithHoldingRegisterWritten((address, oldValue, newValue) =>
+                    HoldingRegisters[address].Value = newValue;
+                }
+                _toastManager.ShowToast($"寄存器[{address}]: {oldValue} → {newValue}", type: Notification.Info);
+            };
+            
+            _tcpSlave.CoilWritten += (address, value) =>
+            {
+                if (address < Coils.Count)
                 {
-                    // 更新UI列表
-                    if (address < HoldingRegisters.Count)
-                    {
-                        HoldingRegisters[address].Value = newValue;
-                    }
-                    _toastManager.ShowToast($"寄存器[{address}]: {oldValue} → {newValue}", type: Notification.Info);
-                })
-                .WithCoilWritten((address, value) =>
-                {
-                    // 更新UI列表
-                    if (address < Coils.Count)
-                    {
-                        Coils[address].Value = value;
-                    }
-                    _toastManager.ShowToast($"线圈[{address}]: {value}", type: Notification.Info);
-                })
-                .WithClientConnected(client =>
-                {
-                    _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success);
-                })
-                .WithClientDisconnected(client =>
-                {
-                    _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning);
-                });
+                    Coils[address].Value = value;
+                }
+                _toastManager.ShowToast($"线圈[{address}]: {value}", type: Notification.Info);
+            };
+            
+            _tcpSlave.ClientConnected += client =>
+            {
+                _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success);
+            };
+            
+            _tcpSlave.ClientDisconnected += client =>
+            {
+                _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning);
+            };
 
             await _tcpSlave.StartAsync();
 
@@ -203,6 +202,7 @@ public partial class SlaveViewModel : ViewModelBase
         try
         {
             _tcpSlave?.Stop();
+            _factory.RemoveSlave("main");
             _tcpSlave = null;
             _toastManager.ShowToast("从站已停止", type: Notification.Info);
         }

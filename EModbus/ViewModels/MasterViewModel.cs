@@ -5,8 +5,9 @@ using CommunityToolkit.Mvvm.Input;
 using EModbus.Extensions;
 using EModbus.Model;
 using Extensions;
+using LyuEModbus.Abstractions;
 using LyuEModbus.Extensions;
-using LyuEModbus.Services;
+using LyuEModbus.Factory;
 using ShadUI;
 
 namespace EModbus.ViewModels;
@@ -14,7 +15,8 @@ namespace EModbus.ViewModels;
 public partial class MasterViewModel : ViewModelBase
 {
     private readonly ToastManager _toastManager;
-    private ModbusTcpMaster? _tcpMaster;
+    private readonly ModbusClientFactory _factory = ModbusClientFactory.Default;
+    private IModbusMaster? _tcpMaster;
 
     public MasterViewModel(ToastManager toastManager, ModbusSettings settings)
     {
@@ -46,7 +48,6 @@ public partial class MasterViewModel : ViewModelBase
     [ObservableProperty]
     public partial ushort WriteValue { get; set; } = 0;
 
-    // 线圈相关
     [ObservableProperty]
     public partial ushort CoilReadAddress { get; set; } = 0;
 
@@ -68,15 +69,9 @@ public partial class MasterViewModel : ViewModelBase
     [ObservableProperty]
     public partial int ReconnectAttempt { get; set; }
 
-    /// <summary>
-    /// 是否已连接（由 ModbusTcpMaster.OnConnectionChanged 事件更新）
-    /// </summary>
     [ObservableProperty]
     public partial bool IsMasterConnected { get; set; }
 
-    /// <summary>
-    /// 是否正在重连（由 ModbusTcpMaster.OnReconnecting 事件更新）
-    /// </summary>
     [ObservableProperty]
     public partial bool IsReconnecting { get; set; }
 
@@ -91,38 +86,50 @@ public partial class MasterViewModel : ViewModelBase
 
         try
         {
-            _tcpMaster = ModbusTcpMaster.Create()
-                .WithSettings(MasterSettings)
-                .WithAutoReconnect(3000, 10)
-                .WithHeartbeat(3000)
-                .WithLog(msg => MasterLog = MasterLog.Append(msg + Environment.NewLine))
-                .WithConnectionChanged(connected =>
+            // 移除旧的主站
+            _factory.RemoveMaster("main");
+            
+            // 创建新的主站
+            _tcpMaster = _factory.CreateTcpMaster("main", opt =>
+            {
+                opt.FromSettings(MasterSettings);
+                opt.AutoReconnect = true;
+                opt.ReconnectInterval = 3000;
+                opt.MaxReconnectAttempts = 10;
+                opt.EnableHeartbeat = true;
+                opt.HeartbeatInterval = 3000;
+            });
+            
+            // 订阅事件
+            _tcpMaster.StateChanged += state =>
+            {
+                IsMasterConnected = state == ModbusConnectionState.Connected;
+                IsReconnecting = state == ModbusConnectionState.Reconnecting;
+                
+                MasterStatus = state switch
                 {
-                    IsMasterConnected = connected;                    
-                    if (connected)
-                    {
-                        MasterStatus = $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}";
-                        ReconnectAttempt = 0;
-                        IsReconnecting = false;
-                        _toastManager.ShowToast("连接成功", type: Notification.Success);
-                    }
-                    else
-                    {
-                        var isReconnecting = _tcpMaster?.IsReconnecting ?? false;
-                        IsReconnecting = isReconnecting;
-                        MasterStatus = isReconnecting ? "重连中..." : "未连接";
-                        if (!isReconnecting)
-                        {
-                            _toastManager.ShowToast("连接已断开", type: Notification.Warning);
-                        }
-                    }
-                })
-                .WithReconnecting(attempt =>
+                    ModbusConnectionState.Connected => $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
+                    ModbusConnectionState.Reconnecting => $"重连中... ({ReconnectAttempt}/10)",
+                    ModbusConnectionState.Connecting => "连接中...",
+                    _ => "未连接"
+                };
+                
+                if (state == ModbusConnectionState.Connected)
                 {
-                    ReconnectAttempt = attempt;
-                    IsReconnecting = true;
-                    MasterStatus = $"重连中... ({attempt}/10)";
-                });
+                    ReconnectAttempt = 0;
+                    _toastManager.ShowToast("连接成功", type: Notification.Success);
+                }
+                else if (state == ModbusConnectionState.Disconnected && !IsReconnecting)
+                {
+                    _toastManager.ShowToast("连接已断开", type: Notification.Warning);
+                }
+            };
+            
+            _tcpMaster.Reconnecting += attempt =>
+            {
+                ReconnectAttempt = attempt;
+                MasterStatus = $"重连中... ({attempt}/10)";
+            };
 
             await _tcpMaster.ConnectAsync();
         }
@@ -145,6 +152,7 @@ public partial class MasterViewModel : ViewModelBase
         try
         {
             _tcpMaster?.Disconnect();
+            _factory.RemoveMaster("main");
             _tcpMaster = null;
             ReconnectAttempt = 0;
             MasterStatus = "未连接";

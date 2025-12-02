@@ -41,4 +41,11 @@ public interface IModbusClient : IDisposable
     /// 连接状态变化事件（支持异步回调）
     /// </summary>
     event Func<ModbusConnectionState, Task>? StateChanged;
+
+    /// <summary>
+    /// 记录日志
+    /// </summary>
+    /// <param name="level">日志级别</param>
+    /// <param name="message">日志消息</param>
+    void Log(ModbusLogLevel level, string message);
 }

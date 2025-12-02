@@ -38,7 +38,7 @@ public partial class SettingsViewModel : ViewModelBase, INavigable
     }
 
     [ObservableProperty]
-    private ModbusSettings settings;
+    public partial ModbusSettings Settings { get; set; }
 
     [RelayCommand]
     private void ResetSettings()
@@ -47,7 +47,7 @@ public partial class SettingsViewModel : ViewModelBase, INavigable
         Settings.Master.UpdatePropertiesHighQualityFrom(new());
     }
 
-    private JsonSerializerOptions _jsonOption = new()
+    private readonly JsonSerializerOptions _jsonOption = new()
     {
         PropertyNamingPolicy = null, // 大驼峰
         WriteIndented = true,

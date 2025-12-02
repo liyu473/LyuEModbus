@@ -166,6 +166,24 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
             await Heartbeat.Invoke();
     }
 
+    /// <summary>
+    /// 记录日志（实现 IModbusClient.Log）
+    /// </summary>
+    /// <param name="level">日志级别</param>
+    /// <param name="message">日志消息</param>
+    public void Log(ModbusLogLevel level, string message)
+    {
+        var nmodbusLevel = level switch
+        {
+            ModbusLogLevel.Debug => LoggingLevel.Debug,
+            ModbusLogLevel.Information => LoggingLevel.Information,
+            ModbusLogLevel.Warning => LoggingLevel.Warning,
+            ModbusLogLevel.Error => LoggingLevel.Error,
+            _ => LoggingLevel.Information
+        };
+        Logger.Log(nmodbusLevel, message);
+    }
+
     #region IModbusMaster 实现 - 代理到 InternalMaster(NModbus原生对象)去实现
 
     /// <inheritdoc />

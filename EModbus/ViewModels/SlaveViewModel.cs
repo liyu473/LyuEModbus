@@ -1,6 +1,3 @@
-using System;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -9,8 +6,10 @@ using EModbus.Model;
 using Extensions;
 using LyuEModbus.Abstractions;
 using LyuEModbus.Extensions;
-using LyuEModbus.Factory;
 using ShadUI;
+using System;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 namespace EModbus.ViewModels;
 
@@ -30,7 +29,7 @@ public partial class SlaveViewModel : ViewModelBase
 
     private async Task InitializeRegistersAsync()
     {
-        await Task.Delay(100); 
+        await Task.Delay(100);
         InitializeRegisters();
     }
 
@@ -112,18 +111,19 @@ public partial class SlaveViewModel : ViewModelBase
         try
         {
             _factory.RemoveSlave("main");
-            
+
             _tcpSlave = _factory.CreateTcpSlave("main")
                 .WithEndpoint(SlaveSettings.IpAddress, SlaveSettings.Port)
                 .WithSlaveId(SlaveSettings.SlaveId)
                 .WithDataStore((ushort)HoldingRegisters.Count, (ushort)Coils.Count)
+                .WithChangeDetectionInterval(200)
                 .OnRunningChanged(running =>
                 {
                     Dispatcher.UIThread.Post(() =>
                     {
                         IsSlaveRunning = running;
-                        SlaveStatus = running 
-                            ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" 
+                        SlaveStatus = running
+                            ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}"
                             : "已停止";
                     });
                     return Task.CompletedTask;

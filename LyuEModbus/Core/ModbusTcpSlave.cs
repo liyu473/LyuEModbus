@@ -57,6 +57,11 @@ internal class ModbusTcpSlave : ModbusSlaveBase
         _options.InitCoilCount = coilCount;
     }
 
+    internal void ConfigureChangeDetectionInterval(int intervalMs)
+    {
+        _options.ChangeDetectionInterval = Math.Max(100, intervalMs); // 最小 10ms，防止 CPU 过高
+    }
+
     public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (IsRunning) return;

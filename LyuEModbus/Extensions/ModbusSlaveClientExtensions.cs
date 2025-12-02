@@ -39,6 +39,19 @@ public static class ModbusSlaveClientExtensions
     }
 
     /// <summary>
+    /// 配置数据变化检测间隔
+    /// <para>用于触发 HoldingRegisterWritten/CoilWritten 事件的轮询频率</para>
+    /// </summary>
+    /// <param name="slave">从站实例</param>
+    /// <param name="intervalMs">检测间隔（毫秒），最小 10ms，默认 100ms</param>
+    public static IModbusSlaveClient WithChangeDetectionInterval(this IModbusSlaveClient slave, int intervalMs)
+    {
+        if (slave is ModbusTcpSlave tcpSlave)
+            tcpSlave.ConfigureChangeDetectionInterval(intervalMs);
+        return slave;
+    }
+
+    /// <summary>
     /// 订阅运行状态变化事件（支持异步回调）
     /// </summary>
     public static IModbusSlaveClient OnRunningChanged(this IModbusSlaveClient slave, Func<bool, Task> handler)

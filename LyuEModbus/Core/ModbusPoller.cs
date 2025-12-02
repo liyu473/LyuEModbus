@@ -27,10 +27,15 @@ public class ModbusPoller : IDisposable
     /// </summary>
     public event Func<Exception, Task>? OnError;
 
+    /// <summary>
+    /// 最小轮询间隔（毫秒）
+    /// </summary>
+    public const int MinIntervalMs = 10;
+
     internal ModbusPoller(Func<CancellationToken, Task> pollAction, int intervalMs)
     {
         _pollAction = pollAction ?? throw new ArgumentNullException(nameof(pollAction));
-        _intervalMs = intervalMs > 0 ? intervalMs : throw new ArgumentException("间隔必须大于0", nameof(intervalMs));
+        _intervalMs = Math.Max(MinIntervalMs, intervalMs); // 强制最小间隔，防止 CPU 占满
     }
 
     /// <summary>

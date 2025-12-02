@@ -14,6 +14,11 @@ public interface IModbusMasterClient : IModbusMaster, IModbusClient
     ModbusPoller? Poller { get; }
 
     /// <summary>
+    /// 轮询组（通过 WithPollerGroup 配置后可用）
+    /// </summary>
+    ModbusPollerGroup? PollerGroup { get; }
+
+    /// <summary>
     /// 连接到从站
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

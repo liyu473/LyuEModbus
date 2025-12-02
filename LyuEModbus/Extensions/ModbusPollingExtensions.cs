@@ -160,6 +160,52 @@ public static class ModbusPollingExtensions
 
     #endregion
 
+    #region 轮询组
+
+    /// <summary>
+    /// 创建轮询组（集中管理多个轮询任务，默认连接成功后自动启动）
+    /// </summary>
+    /// <param name="master">主站实例</param>
+    /// <param name="configure">配置轮询组</param>
+    /// <param name="autoStart">是否在连接成功后自动启动（默认 true）</param>
+    /// <returns>主站实例（支持链式调用）</returns>
+    public static IModbusMasterClient WithPollerGroup(
+        this IModbusMasterClient master,
+        Action<ModbusPollerGroup> configure,
+        bool autoStart = true)
+    {
+        if (master is ModbusMasterBase masterBase)
+        {
+            masterBase.PollerGroup?.Dispose();
+            masterBase.PollerGroup = new ModbusPollerGroup(master);
+            configure(masterBase.PollerGroup);
+
+            // 默认自动启动
+            if (autoStart)
+            {
+                master.StateChanged += async state =>
+                {
+                    if (state == Models.ModbusConnectionState.Connected)
+                        masterBase.PollerGroup?.Start();
+                    else if (state == Models.ModbusConnectionState.Disconnected)
+                        masterBase.PollerGroup?.Stop();
+                };
+            }
+        }
+
+        return master;
+    }
+
+    /// <summary>
+    /// 创建轮询组（独立实例，不绑定到 master）
+    /// </summary>
+    public static ModbusPollerGroup CreatePollerGroup(this IModbusMasterClient master)
+    {
+        return new ModbusPollerGroup(master);
+    }
+
+    #endregion
+
     #region 独立创建轮询器（不绑定到 master.Poller）
 
     /// <summary>

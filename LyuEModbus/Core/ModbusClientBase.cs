@@ -12,19 +12,11 @@ public abstract class ModbusClientBase : IModbusClient
     
     protected readonly IModbusLogger Logger;
     
-    /// <inheritdoc />
     public string ClientId { get; }
-    
-    /// <inheritdoc />
     public string Name { get; }
-    
-    /// <inheritdoc />
     public abstract string Address { get; }
-    
-    /// <inheritdoc />
     public byte SlaveId { get; protected set; }
     
-    /// <inheritdoc />
     public ModbusConnectionState State
     {
         get => _state;
@@ -34,18 +26,12 @@ public abstract class ModbusClientBase : IModbusClient
             _state = value;
             Logger.Log(LoggingLevel.Information, $"状态变更: {value}");
             StateChanged?.Invoke(value);
-            StateChangedAsync?.Invoke(value);
         }
     }
     
-    /// <inheritdoc />
     public bool IsConnected => State == ModbusConnectionState.Connected;
     
-    /// <inheritdoc />
     public event Action<ModbusConnectionState>? StateChanged;
-    
-    /// <inheritdoc />
-    public event Func<ModbusConnectionState, Task>? StateChangedAsync;
     
     protected ModbusClientBase(string name, IModbusLogger logger)
     {
@@ -57,10 +43,7 @@ public abstract class ModbusClientBase : IModbusClient
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
-        {
             StateChanged = null;
-            StateChangedAsync = null;
-        }
     }
     
     public void Dispose()

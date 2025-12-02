@@ -16,7 +16,7 @@ public partial class MasterViewModel : ViewModelBase
 {
     private readonly ToastManager _toastManager;
     private readonly ModbusClientFactory _factory = ModbusClientFactory.Default;
-    private IModbusMaster? _tcpMaster;
+    private IModbusMasterClient? _tcpMaster;
 
     public MasterViewModel(ToastManager toastManager, ModbusSettings settings)
     {
@@ -24,56 +24,23 @@ public partial class MasterViewModel : ViewModelBase
         MasterSettings = settings.Master;
     }
 
-    [ObservableProperty]
-    public partial MasterSettings MasterSettings { get; set; }
-
-    [ObservableProperty]
-    public partial string MasterStatus { get; set; } = "未连接";
-
-    [ObservableProperty]
-    public partial string MasterLog { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial ushort ReadAddress { get; set; } = 0;
-
-    [ObservableProperty]
-    public partial ushort ReadCount { get; set; } = 10;
-
-    [ObservableProperty]
-    public partial string ReadResult { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial ushort WriteAddress { get; set; } = 0;
-
-    [ObservableProperty]
-    public partial ushort WriteValue { get; set; } = 0;
-
-    [ObservableProperty]
-    public partial ushort CoilReadAddress { get; set; } = 0;
-
-    [ObservableProperty]
-    public partial ushort CoilReadCount { get; set; } = 10;
-
-    [ObservableProperty]
-    public partial string CoilReadResult { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial ushort CoilWriteAddress { get; set; } = 0;
-
-    [ObservableProperty]
-    public partial bool CoilWriteValue { get; set; } = false;
-
-    [ObservableProperty]
-    public partial bool AutoReconnect { get; set; } = true;
-
-    [ObservableProperty]
-    public partial int ReconnectAttempt { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsMasterConnected { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsReconnecting { get; set; }
+    [ObservableProperty] public partial MasterSettings MasterSettings { get; set; }
+    [ObservableProperty] public partial string MasterStatus { get; set; } = "未连接";
+    [ObservableProperty] public partial string MasterLog { get; set; } = string.Empty;
+    [ObservableProperty] public partial ushort ReadAddress { get; set; } = 0;
+    [ObservableProperty] public partial ushort ReadCount { get; set; } = 10;
+    [ObservableProperty] public partial string ReadResult { get; set; } = string.Empty;
+    [ObservableProperty] public partial ushort WriteAddress { get; set; } = 0;
+    [ObservableProperty] public partial ushort WriteValue { get; set; } = 0;
+    [ObservableProperty] public partial ushort CoilReadAddress { get; set; } = 0;
+    [ObservableProperty] public partial ushort CoilReadCount { get; set; } = 10;
+    [ObservableProperty] public partial string CoilReadResult { get; set; } = string.Empty;
+    [ObservableProperty] public partial ushort CoilWriteAddress { get; set; } = 0;
+    [ObservableProperty] public partial bool CoilWriteValue { get; set; } = false;
+    [ObservableProperty] public partial bool AutoReconnect { get; set; } = true;
+    [ObservableProperty] public partial int ReconnectAttempt { get; set; }
+    [ObservableProperty] public partial bool IsMasterConnected { get; set; }
+    [ObservableProperty] public partial bool IsReconnecting { get; set; }
 
     [RelayCommand]
     private async Task ConnectMasterAsync()
@@ -86,10 +53,8 @@ public partial class MasterViewModel : ViewModelBase
 
         try
         {
-            // 移除旧的主站
             _factory.RemoveMaster("main");
             
-            // 创建新的主站
             _tcpMaster = _factory.CreateTcpMaster("main", opt =>
             {
                 opt.FromSettings(MasterSettings);
@@ -100,7 +65,6 @@ public partial class MasterViewModel : ViewModelBase
                 opt.HeartbeatInterval = 3000;
             });
             
-            // 订阅事件
             _tcpMaster.StateChanged += state =>
             {
                 IsMasterConnected = state == ModbusConnectionState.Connected;
@@ -215,9 +179,7 @@ public partial class MasterViewModel : ViewModelBase
             ex => { _toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
         
         if (success)
-        {
             _toastManager.ShowToast("写入成功", type: Notification.Success);
-        }
     }
 
     [RelayCommand]
@@ -252,14 +214,9 @@ public partial class MasterViewModel : ViewModelBase
             ex => { _toastManager.ShowToast($"写入线圈失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
         
         if (success)
-        {
             _toastManager.ShowToast($"写入线圈成功: {CoilWriteValue}", type: Notification.Success);
-        }
     }
 
     [RelayCommand]
-    private void ClearMasterLog()
-    {
-        MasterLog = string.Empty;
-    }
+    private void ClearMasterLog() => MasterLog = string.Empty;
 }

@@ -1,0 +1,64 @@
+using NModbus;
+
+namespace LyuEModbus.Abstractions;
+
+/// <summary>
+/// 扩展的 Modbus 从站接口（继承 NModbus.IModbusSlave + IModbusClient）
+/// </summary>
+public interface IModbusSlaveClient : IModbusSlave, IModbusClient
+{
+    /// <summary>
+    /// 是否正在运行
+    /// </summary>
+    bool IsRunning { get; }
+    
+    /// <summary>
+    /// 启动从站
+    /// </summary>
+    Task StartAsync(CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// 停止从站
+    /// </summary>
+    void Stop();
+    
+    /// <summary>
+    /// 设置线圈值
+    /// </summary>
+    void SetCoil(ushort address, bool value);
+    
+    /// <summary>
+    /// 设置保持寄存器值
+    /// </summary>
+    void SetHoldingRegister(ushort address, ushort value);
+    
+    /// <summary>
+    /// 批量设置保持寄存器
+    /// </summary>
+    void SetHoldingRegisters(ushort startAddress, ushort[] values);
+    
+    /// <summary>
+    /// 读取保持寄存器值
+    /// </summary>
+    ushort[]? ReadHoldingRegisters(ushort startAddress, ushort count);
+    
+    /// <summary>
+    /// 寄存器被修改事件 (地址, 旧值, 新值)
+    /// </summary>
+    event Action<ushort, ushort, ushort>? HoldingRegisterWritten;
+    
+    /// <summary>
+    /// 线圈被修改事件 (地址, 值)
+    /// </summary>
+    event Action<ushort, bool>? CoilWritten;
+    
+    /// <summary>
+    /// 客户端连接事件
+    /// </summary>
+    event Action<string>? ClientConnected;
+    
+    /// <summary>
+    /// 客户端断开事件
+    /// </summary>
+    event Action<string>? ClientDisconnected;
+}

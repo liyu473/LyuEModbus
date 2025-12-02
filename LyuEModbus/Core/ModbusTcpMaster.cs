@@ -7,7 +7,7 @@ namespace LyuEModbus.Core;
 /// <summary>
 /// Modbus TCP 主站实现
 /// </summary>
-internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
+internal class ModbusTcpMaster : ModbusClientBase, IModbusMasterClient
 {
     private TcpClient? _client;
     private NModbus.IModbusMaster? _master;
@@ -19,17 +19,11 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
     
     public override string Address => $"{_options.IpAddress}:{_options.Port}";
     
-    /// <inheritdoc />
+    // IModbusMaster 实现
+    public IModbusTransport Transport => _master?.Transport ?? throw new InvalidOperationException("未连接");
+    
     public event Action<int>? Reconnecting;
-    
-    /// <inheritdoc />
-    public event Func<int, Task>? ReconnectingAsync;
-    
-    /// <inheritdoc />
     public event Action? Heartbeat;
-    
-    /// <inheritdoc />
-    public event Func<Task>? HeartbeatAsync;
     
     internal ModbusTcpMaster(string name, ModbusMasterOptions options, IModbusLogger logger) 
         : base(name, logger)
@@ -38,15 +32,13 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
         SlaveId = options.SlaveId;
     }
     
-    /// <inheritdoc />
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
         if (IsConnected)
         {
-            Logger.Log(LoggingLevel.Debug, "已连接，跳过连接");
+            Logger.Log(LoggingLevel.Debug, "已连接，跳过");
             return;
         }
-        
         await ConnectInternalAsync(cancellationToken);
     }
     
@@ -71,9 +63,7 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
             Logger.Log(LoggingLevel.Information, $"已连接到 {Address}");
             
             if (_options.EnableHeartbeat)
-            {
                 StartHeartbeat();
-            }
         }
         catch (Exception ex)
         {
@@ -83,7 +73,6 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
         }
     }
 
-    /// <inheritdoc />
     public void Disconnect()
     {
         StopReconnect();
@@ -101,7 +90,6 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
             _client?.Close();
             _master = null;
             _client = null;
-            
             State = ModbusConnectionState.Disconnected;
             Logger.Log(LoggingLevel.Information, "已断开连接");
         }
@@ -112,7 +100,6 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
         }
     }
     
-    /// <inheritdoc />
     public void StopReconnect()
     {
         _reconnectCts?.Cancel();
@@ -126,16 +113,12 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
         
         _ = Task.Run(async () =>
         {
-            Logger.Log(LoggingLevel.Debug, "心跳检测已启动");
             while (_heartbeatCts != null && !_heartbeatCts.Token.IsCancellationRequested)
             {
                 try
                 {
                     await Task.Delay(_options.HeartbeatInterval, _heartbeatCts.Token);
-                    
                     Heartbeat?.Invoke();
-                    if (HeartbeatAsync != null)
-                        await HeartbeatAsync.Invoke();
                     
                     if (!CheckConnection())
                     {
@@ -144,16 +127,12 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
                         return;
                     }
                 }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
+                catch (OperationCanceledException) { break; }
                 catch (Exception ex)
                 {
-                    Logger.Log(LoggingLevel.Error, $"心跳检测异常: {ex.Message}");
+                    Logger.Log(LoggingLevel.Error, $"心跳异常: {ex.Message}");
                 }
             }
-            Logger.Log(LoggingLevel.Debug, "心跳检测已停止");
         });
     }
     
@@ -168,7 +147,6 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
         try
         {
             if (_client?.Client == null || !_client.Connected) return false;
-            
             if (_client.Client.Poll(0, SelectMode.SelectRead))
             {
                 byte[] buff = new byte[1];
@@ -176,32 +154,21 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
             }
             return true;
         }
-        catch
-        {
-            return false;
-        }
+        catch { return false; }
     }
     
     private async Task HandleConnectionLostAsync()
     {
         if (State == ModbusConnectionState.Reconnecting) return;
-        
         StopHeartbeat();
         CleanupConnection();
-        
         if (_options.AutoReconnect)
             await StartReconnectAsync();
     }
     
     private void CleanupConnection()
     {
-        try
-        {
-            _master?.Dispose();
-            _client?.Close();
-        }
-        catch { }
-        
+        try { _master?.Dispose(); _client?.Close(); } catch { }
         _master = null;
         _client = null;
     }
@@ -215,59 +182,40 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
         _reconnectCts = new CancellationTokenSource();
         var attempts = 0;
         
-        Logger.Log(LoggingLevel.Information, "开始自动重连...");
-        
         while (!_reconnectCts.Token.IsCancellationRequested)
         {
             attempts++;
             Reconnecting?.Invoke(attempts);
-            if (ReconnectingAsync != null)
-                await ReconnectingAsync.Invoke(attempts);
-            
-            var maxStr = _options.MaxReconnectAttempts == 0 ? "∞" : _options.MaxReconnectAttempts.ToString();
-            Logger.Log(LoggingLevel.Information, $"重连尝试 {attempts}/{maxStr}");
+            Logger.Log(LoggingLevel.Information, $"重连 {attempts}/{(_options.MaxReconnectAttempts == 0 ? "∞" : _options.MaxReconnectAttempts.ToString())}");
             
             try
             {
                 await ConnectInternalAsync(_reconnectCts.Token);
-                Logger.Log(LoggingLevel.Information, "重连成功");
                 return;
             }
             catch
             {
                 if (_options.MaxReconnectAttempts > 0 && attempts >= _options.MaxReconnectAttempts)
                 {
-                    Logger.Log(LoggingLevel.Warning, $"已达到最大重连次数 {_options.MaxReconnectAttempts}");
                     State = ModbusConnectionState.Disconnected;
                     return;
                 }
-                
-                try
-                {
-                    await Task.Delay(_options.ReconnectInterval, _reconnectCts.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
+                try { await Task.Delay(_options.ReconnectInterval, _reconnectCts.Token); }
+                catch (OperationCanceledException) { break; }
             }
         }
-        
         State = ModbusConnectionState.Disconnected;
     }
     
     private async Task<bool> EnsureConnectedAsync()
     {
         if (IsConnected && _master != null) return true;
-        
         if (_options.AutoReconnect && State != ModbusConnectionState.Reconnecting)
         {
-            Logger.Log(LoggingLevel.Warning, "连接已断开，尝试重连...");
             CleanupConnection();
             await StartReconnectAsync();
             return IsConnected;
         }
-        
         return false;
     }
     
@@ -278,161 +226,75 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
             Logger.Log(LoggingLevel.Error, $"通信异常: {ex.Message}");
             CleanupConnection();
             State = ModbusConnectionState.Disconnected;
-            
             if (_options.AutoReconnect)
                 _ = StartReconnectAsync();
         }
     }
 
-    #region 读取操作
+    #region IModbusMaster 实现
     
-    /// <inheritdoc />
-    public async Task<bool[]> ReadCoilsAsync(ushort startAddress, ushort count, CancellationToken cancellationToken = default)
+    public bool[] ReadCoils(byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        => _master?.ReadCoils(slaveAddress, startAddress, numberOfPoints) ?? throw new InvalidOperationException("未连接");
+    
+    public Task<bool[]> ReadCoilsAsync(byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        => _master?.ReadCoilsAsync(slaveAddress, startAddress, numberOfPoints) ?? throw new InvalidOperationException("未连接");
+    
+    public bool[] ReadInputs(byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        => _master?.ReadInputs(slaveAddress, startAddress, numberOfPoints) ?? throw new InvalidOperationException("未连接");
+    
+    public Task<bool[]> ReadInputsAsync(byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        => _master?.ReadInputsAsync(slaveAddress, startAddress, numberOfPoints) ?? throw new InvalidOperationException("未连接");
+    
+    public ushort[] ReadHoldingRegisters(byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        => _master?.ReadHoldingRegisters(slaveAddress, startAddress, numberOfPoints) ?? throw new InvalidOperationException("未连接");
+    
+    public Task<ushort[]> ReadHoldingRegistersAsync(byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        => _master?.ReadHoldingRegistersAsync(slaveAddress, startAddress, numberOfPoints) ?? throw new InvalidOperationException("未连接");
+    
+    public ushort[] ReadInputRegisters(byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        => _master?.ReadInputRegisters(slaveAddress, startAddress, numberOfPoints) ?? throw new InvalidOperationException("未连接");
+    
+    public Task<ushort[]> ReadInputRegistersAsync(byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        => _master?.ReadInputRegistersAsync(slaveAddress, startAddress, numberOfPoints) ?? throw new InvalidOperationException("未连接");
+    
+    public void WriteSingleCoil(byte slaveAddress, ushort coilAddress, bool value)
+        => _master?.WriteSingleCoil(slaveAddress, coilAddress, value);
+    
+    public Task WriteSingleCoilAsync(byte slaveAddress, ushort coilAddress, bool value)
+        => _master?.WriteSingleCoilAsync(slaveAddress, coilAddress, value) ?? Task.CompletedTask;
+    
+    public void WriteSingleRegister(byte slaveAddress, ushort registerAddress, ushort value)
+        => _master?.WriteSingleRegister(slaveAddress, registerAddress, value);
+    
+    public Task WriteSingleRegisterAsync(byte slaveAddress, ushort registerAddress, ushort value)
+        => _master?.WriteSingleRegisterAsync(slaveAddress, registerAddress, value) ?? Task.CompletedTask;
+    
+    public void WriteMultipleCoils(byte slaveAddress, ushort startAddress, bool[] data)
+        => _master?.WriteMultipleCoils(slaveAddress, startAddress, data);
+    
+    public Task WriteMultipleCoilsAsync(byte slaveAddress, ushort startAddress, bool[] data)
+        => _master?.WriteMultipleCoilsAsync(slaveAddress, startAddress, data) ?? Task.CompletedTask;
+    
+    public void WriteMultipleRegisters(byte slaveAddress, ushort startAddress, ushort[] data)
+        => _master?.WriteMultipleRegisters(slaveAddress, startAddress, data);
+    
+    public Task WriteMultipleRegistersAsync(byte slaveAddress, ushort startAddress, ushort[] data)
+        => _master?.WriteMultipleRegistersAsync(slaveAddress, startAddress, data) ?? Task.CompletedTask;
+    
+    public ushort[] ReadWriteMultipleRegisters(byte slaveAddress, ushort startReadAddress, ushort numberOfPointsToRead, ushort startWriteAddress, ushort[] writeData)
+        => _master?.ReadWriteMultipleRegisters(slaveAddress, startReadAddress, numberOfPointsToRead, startWriteAddress, writeData) ?? throw new InvalidOperationException("未连接");
+    
+    public Task<ushort[]> ReadWriteMultipleRegistersAsync(byte slaveAddress, ushort startReadAddress, ushort numberOfPointsToRead, ushort startWriteAddress, ushort[] writeData)
+        => _master?.ReadWriteMultipleRegistersAsync(slaveAddress, startReadAddress, numberOfPointsToRead, startWriteAddress, writeData) ?? throw new InvalidOperationException("未连接");
+    
+    public TResponse ExecuteCustomMessage<TResponse>(NModbus.IModbusMessage request) where TResponse : NModbus.IModbusMessage, new()
     {
-        if (!await EnsureConnectedAsync())
-            throw new InvalidOperationException("未连接到从站");
-        
-        Logger.Log(LoggingLevel.Debug, $"读取线圈: 起始={startAddress}, 数量={count}");
-        try
-        {
-            return await _master!.ReadCoilsAsync(SlaveId, startAddress, count);
-        }
-        catch (Exception ex)
-        {
-            await HandleCommunicationErrorAsync(ex);
-            throw;
-        }
+        if (_master == null) throw new InvalidOperationException("未连接");
+        return _master.ExecuteCustomMessage<TResponse>(request);
     }
     
-    /// <inheritdoc />
-    public async Task<bool[]> ReadDiscreteInputsAsync(ushort startAddress, ushort count, CancellationToken cancellationToken = default)
-    {
-        if (!await EnsureConnectedAsync())
-            throw new InvalidOperationException("未连接到从站");
-        
-        Logger.Log(LoggingLevel.Debug, $"读取离散输入: 起始={startAddress}, 数量={count}");
-        try
-        {
-            return await _master!.ReadInputsAsync(SlaveId, startAddress, count);
-        }
-        catch (Exception ex)
-        {
-            await HandleCommunicationErrorAsync(ex);
-            throw;
-        }
-    }
-    
-    /// <inheritdoc />
-    public async Task<ushort[]> ReadHoldingRegistersAsync(ushort startAddress, ushort count, CancellationToken cancellationToken = default)
-    {
-        if (!await EnsureConnectedAsync())
-            throw new InvalidOperationException("未连接到从站");
-        
-        Logger.Log(LoggingLevel.Debug, $"读取保持寄存器: 起始={startAddress}, 数量={count}");
-        try
-        {
-            return await _master!.ReadHoldingRegistersAsync(SlaveId, startAddress, count);
-        }
-        catch (Exception ex)
-        {
-            await HandleCommunicationErrorAsync(ex);
-            throw;
-        }
-    }
-    
-    /// <inheritdoc />
-    public async Task<ushort[]> ReadInputRegistersAsync(ushort startAddress, ushort count, CancellationToken cancellationToken = default)
-    {
-        if (!await EnsureConnectedAsync())
-            throw new InvalidOperationException("未连接到从站");
-        
-        Logger.Log(LoggingLevel.Debug, $"读取输入寄存器: 起始={startAddress}, 数量={count}");
-        try
-        {
-            return await _master!.ReadInputRegistersAsync(SlaveId, startAddress, count);
-        }
-        catch (Exception ex)
-        {
-            await HandleCommunicationErrorAsync(ex);
-            throw;
-        }
-    }
-    
-    #endregion
-    
-    #region 写入操作
-    
-    /// <inheritdoc />
-    public async Task WriteSingleCoilAsync(ushort address, bool value, CancellationToken cancellationToken = default)
-    {
-        if (!await EnsureConnectedAsync())
-            throw new InvalidOperationException("未连接到从站");
-        
-        Logger.Log(LoggingLevel.Debug, $"写入线圈: 地址={address}, 值={value}");
-        try
-        {
-            await _master!.WriteSingleCoilAsync(SlaveId, address, value);
-        }
-        catch (Exception ex)
-        {
-            await HandleCommunicationErrorAsync(ex);
-            throw;
-        }
-    }
-    
-    /// <inheritdoc />
-    public async Task WriteSingleRegisterAsync(ushort address, ushort value, CancellationToken cancellationToken = default)
-    {
-        if (!await EnsureConnectedAsync())
-            throw new InvalidOperationException("未连接到从站");
-        
-        Logger.Log(LoggingLevel.Debug, $"写入寄存器: 地址={address}, 值={value}");
-        try
-        {
-            await _master!.WriteSingleRegisterAsync(SlaveId, address, value);
-        }
-        catch (Exception ex)
-        {
-            await HandleCommunicationErrorAsync(ex);
-            throw;
-        }
-    }
-    
-    /// <inheritdoc />
-    public async Task WriteMultipleCoilsAsync(ushort startAddress, bool[] values, CancellationToken cancellationToken = default)
-    {
-        if (!await EnsureConnectedAsync())
-            throw new InvalidOperationException("未连接到从站");
-        
-        Logger.Log(LoggingLevel.Debug, $"写入多个线圈: 起始={startAddress}, 数量={values.Length}");
-        try
-        {
-            await _master!.WriteMultipleCoilsAsync(SlaveId, startAddress, values);
-        }
-        catch (Exception ex)
-        {
-            await HandleCommunicationErrorAsync(ex);
-            throw;
-        }
-    }
-    
-    /// <inheritdoc />
-    public async Task WriteMultipleRegistersAsync(ushort startAddress, ushort[] values, CancellationToken cancellationToken = default)
-    {
-        if (!await EnsureConnectedAsync())
-            throw new InvalidOperationException("未连接到从站");
-        
-        Logger.Log(LoggingLevel.Debug, $"写入多个寄存器: 起始={startAddress}, 数量={values.Length}");
-        try
-        {
-            await _master!.WriteMultipleRegistersAsync(SlaveId, startAddress, values);
-        }
-        catch (Exception ex)
-        {
-            await HandleCommunicationErrorAsync(ex);
-            throw;
-        }
-    }
+    public void WriteFileRecord(byte slaveAddress, ushort fileNumber, ushort startingAddress, byte[] data)
+        => _master?.WriteFileRecord(slaveAddress, fileNumber, startingAddress, data);
     
     #endregion
     
@@ -446,13 +308,9 @@ internal class ModbusTcpMaster : ModbusClientBase, Abstractions.IModbusMaster
             StopReconnect();
             StopHeartbeat();
             CleanupConnection();
-            
             Reconnecting = null;
-            ReconnectingAsync = null;
             Heartbeat = null;
-            HeartbeatAsync = null;
         }
-        
         base.Dispose(disposing);
     }
 }

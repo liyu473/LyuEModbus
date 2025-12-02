@@ -6,15 +6,8 @@ namespace LyuEModbus.DependencyInjection;
 /// <summary>
 /// Microsoft.Extensions.Logging 适配器
 /// </summary>
-internal class MicrosoftLoggerAdapter : IModbusLogger
+internal class MicrosoftLoggerAdapter(ILogger logger) : IModbusLogger
 {
-    private readonly ILogger _logger;
-    
-    public MicrosoftLoggerAdapter(ILogger logger)
-    {
-        _logger = logger;
-    }
-    
     public void Log(LoggingLevel level, string message)
     {
         var logLevel = level switch
@@ -26,8 +19,18 @@ internal class MicrosoftLoggerAdapter : IModbusLogger
             _ => LogLevel.Information
         };
         
-        _logger.Log(logLevel, message);
+        if (logger.IsEnabled(logLevel))
+        {
+            logger.Log(logLevel, "{Message}", message);
+        }
     }
     
-    public bool ShouldLog(LoggingLevel level) => true;
+    public bool ShouldLog(LoggingLevel level) => level switch
+    {
+        LoggingLevel.Debug => logger.IsEnabled(LogLevel.Debug),
+        LoggingLevel.Information => logger.IsEnabled(LogLevel.Information),
+        LoggingLevel.Warning => logger.IsEnabled(LogLevel.Warning),
+        LoggingLevel.Error => logger.IsEnabled(LogLevel.Error),
+        _ => logger.IsEnabled(LogLevel.Information)
+    };
 }

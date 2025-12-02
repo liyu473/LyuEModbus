@@ -15,7 +15,7 @@ internal class ModbusTcpSlave : ModbusSlaveBase
     private bool _disposed;
     private ushort[]? _lastHoldingValues;
     private bool[]? _lastCoilValues;
-    private readonly List<TcpClient> _connectedClients = new();
+    private readonly List<TcpClient> _connectedClients = [];
 
     private readonly ModbusSlaveOptions _options;
 
@@ -52,10 +52,10 @@ internal class ModbusTcpSlave : ModbusSlaveBase
                 try { await _slaveNetwork.ListenAsync(_cts.Token); }
                 catch (OperationCanceledException) { }
                 catch (Exception ex) { Logger.Log(LoggingLevel.Error, $"监听异常: {ex.Message}"); }
-            });
+            }, _cts.Token);
 
-            _ = Task.Run(MonitorClientsAsync);
-            _ = Task.Run(MonitorChangesAsync);
+            _ = Task.Run(MonitorClientsAsync, _cts.Token);
+            _ = Task.Run(MonitorChangesAsync, _cts.Token);
 
             IsRunning = true;
             State = ModbusConnectionState.Connected;
@@ -196,14 +196,14 @@ internal class ModbusTcpSlave : ModbusSlaveBase
 
     public override void SetCoil(ushort address, bool value)
     {
-        InternalSlave?.DataStore?.CoilDiscretes.WritePoints(address, new[] { value });
+        InternalSlave?.DataStore?.CoilDiscretes.WritePoints(address, [value]);
         if (_lastCoilValues != null && address < _lastCoilValues.Length)
             _lastCoilValues[address] = value;
     }
 
     public override void SetHoldingRegister(ushort address, ushort value)
     {
-        InternalSlave?.DataStore?.HoldingRegisters.WritePoints(address, new[] { value });
+        InternalSlave?.DataStore?.HoldingRegisters.WritePoints(address, [value]);
         if (_lastHoldingValues != null && address < _lastHoldingValues.Length)
             _lastHoldingValues[address] = value;
     }

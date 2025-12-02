@@ -7,8 +7,8 @@ namespace LyuEModbus.DependencyInjection;
 /// </summary>
 public class ModbusServiceOptions
 {
-    internal Dictionary<string, Action<ModbusMasterOptions>> MasterConfigurations { get; } = new();
-    internal Dictionary<string, Action<ModbusSlaveOptions>> SlaveConfigurations { get; } = new();
+    internal Dictionary<string, Action<ModbusMasterOptions>> MasterConfigurations { get; } = [];
+    internal Dictionary<string, Action<ModbusSlaveOptions>> SlaveConfigurations { get; } = [];
     
     /// <summary>
     /// 添加预配置的 TCP 主站

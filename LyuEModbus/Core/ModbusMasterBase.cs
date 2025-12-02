@@ -8,15 +8,15 @@ namespace LyuEModbus.Core;
 /// <summary>
 /// Modbus 主站抽象基类
 /// </summary>
-public abstract class ModbusMasterBase : IModbusMasterClient
+public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IModbusMasterClient
 {
     private ModbusConnectionState _state = Disconnected;
     
-    protected readonly IModbusLogger Logger;
+    protected readonly IModbusLogger Logger = logger;
     protected IModbusMaster? InternalMaster;
-    
-    public string ClientId { get; }
-    public string Name { get; }
+
+    public string ClientId { get; } = Guid.NewGuid().ToString("N")[..8];
+    public string Name { get; } = name;
     public abstract string Address { get; }
     public byte SlaveId { get; protected set; }
     
@@ -40,14 +40,7 @@ public abstract class ModbusMasterBase : IModbusMasterClient
     public event Action<ModbusConnectionState>? StateChanged;
     public event Action<int>? Reconnecting;
     public event Action? Heartbeat;
-    
-    protected ModbusMasterBase(string name, IModbusLogger logger)
-    {
-        ClientId = Guid.NewGuid().ToString("N")[..8];
-        Name = name;
-        Logger = logger;
-    }
-    
+
     public abstract Task ConnectAsync(CancellationToken cancellationToken = default);
     public abstract void Disconnect();
     public abstract void StopReconnect();

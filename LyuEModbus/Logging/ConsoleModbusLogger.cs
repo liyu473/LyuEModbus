@@ -1,4 +1,3 @@
-using LyuEModbus.Abstractions;
 using NModbus;
 
 namespace LyuEModbus.Logging;
@@ -6,12 +5,8 @@ namespace LyuEModbus.Logging;
 /// <summary>
 /// 控制台日志记录器
 /// </summary>
-public class ConsoleModbusLogger : IModbusLogger
+public class ConsoleModbusLogger(string name) : IModbusLogger
 {
-    private readonly string _name;
-    
-    public ConsoleModbusLogger(string name) => _name = name;
-    
     public void Log(LoggingLevel level, string message)
     {
         var levelStr = level switch
@@ -22,8 +17,8 @@ public class ConsoleModbusLogger : IModbusLogger
             LoggingLevel.Error => "ERR",
             _ => "???"
         };
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [{levelStr}] [{_name}] {message}");
+        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [{levelStr}] [{name}] {message}");
     }
-    
+
     public bool ShouldLog(LoggingLevel level) => true;
 }

@@ -8,15 +8,15 @@ namespace LyuEModbus.Core;
 /// <summary>
 /// Modbus 从站抽象基类
 /// </summary>
-public abstract class ModbusSlaveBase : IModbusSlaveClient
+public abstract class ModbusSlaveBase(string name, IModbusLogger logger) : IModbusSlaveClient
 {
     private ModbusConnectionState _state = Disconnected;
     
-    protected readonly IModbusLogger Logger;
+    protected readonly IModbusLogger Logger = logger;
     protected IModbusSlave? InternalSlave;
-    
-    public string ClientId { get; }
-    public string Name { get; }
+
+    public string ClientId { get; } = Guid.NewGuid().ToString("N")[..8];
+    public string Name { get; } = name;
     public abstract string Address { get; }
     public byte SlaveId { get; protected set; }
     public virtual bool IsRunning { get; protected set; }
@@ -44,14 +44,7 @@ public abstract class ModbusSlaveBase : IModbusSlaveClient
     public event Action<ushort, bool>? CoilWritten;
     public event Action<string>? ClientConnected;
     public event Action<string>? ClientDisconnected;
-    
-    protected ModbusSlaveBase(string name, IModbusLogger logger)
-    {
-        ClientId = Guid.NewGuid().ToString("N")[..8];
-        Name = name;
-        Logger = logger;
-    }
-    
+
     public abstract Task StartAsync(CancellationToken cancellationToken = default);
     public abstract void Stop();
     public abstract void SetCoil(ushort address, bool value);

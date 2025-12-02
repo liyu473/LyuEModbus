@@ -9,21 +9,18 @@ namespace LyuEModbus.Factory;
 /// <summary>
 /// Modbus 工厂实现
 /// </summary>
-public class ModbusClientFactory : IModbusFactory, IDisposable
+public class ModbusClientFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory, IDisposable
 {
-    private readonly IModbusLoggerFactory _loggerFactory;
+    private readonly IModbusLoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
     private readonly ConcurrentDictionary<string, IModbusMasterClient> _masters = new();
     private readonly ConcurrentDictionary<string, IModbusSlaveClient> _slaves = new();
     private bool _disposed;
 
     public static ModbusClientFactory Default { get; } = new(new ConsoleModbusLoggerFactory());
 
-    public ModbusClientFactory(IModbusLoggerFactory loggerFactory)
-    {
-        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-    }
-
     public ModbusClientFactory() : this(NullModbusLoggerFactory.Instance) { }
+
+    #region 工厂实现
 
     public IModbusMasterClient CreateTcpMaster(string name, Action<ModbusMasterOptions> configure)
     {
@@ -122,4 +119,6 @@ public class ModbusClientFactory : IModbusFactory, IDisposable
 
         GC.SuppressFinalize(this);
     }
+
+    #endregion
 }

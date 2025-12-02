@@ -1,4 +1,5 @@
 using LyuEModbus.Abstractions;
+using NModbus;
 
 namespace LyuEModbus.Logging;
 
@@ -7,5 +8,5 @@ namespace LyuEModbus.Logging;
 /// </summary>
 public class ConsoleModbusLoggerFactory : IModbusLoggerFactory
 {
-    public NModbus.IModbusLogger CreateLogger(string name) => new ConsoleModbusLogger(name);
+    public IModbusLogger CreateLogger(string name) => new ConsoleModbusLogger(name);
 }

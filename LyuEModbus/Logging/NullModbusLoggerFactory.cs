@@ -1,4 +1,5 @@
 using LyuEModbus.Abstractions;
+using NModbus;
 
 namespace LyuEModbus.Logging;
 
@@ -8,5 +9,5 @@ namespace LyuEModbus.Logging;
 public class NullModbusLoggerFactory : IModbusLoggerFactory
 {
     public static readonly NullModbusLoggerFactory Instance = new();
-    public NModbus.IModbusLogger CreateLogger(string name) => NullModbusLogger.Instance;
+    public IModbusLogger CreateLogger(string name) => NullModbusLogger.Instance;
 }

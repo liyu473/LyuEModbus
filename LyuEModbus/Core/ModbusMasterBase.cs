@@ -13,7 +13,7 @@ public abstract class ModbusMasterBase : IModbusMasterClient
     private ModbusConnectionState _state = Disconnected;
     
     protected readonly IModbusLogger Logger;
-    protected NModbus.IModbusMaster? InternalMaster;
+    protected IModbusMaster? InternalMaster;
     
     public string ClientId { get; }
     public string Name { get; }

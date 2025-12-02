@@ -1,7 +1,6 @@
-using System.Net.Sockets;
-using LyuEModbus.Abstractions;
 using LyuEModbus.Models;
 using NModbus;
+using System.Net.Sockets;
 
 namespace LyuEModbus.Core;
 
@@ -14,18 +13,18 @@ internal class ModbusTcpMaster : ModbusMasterBase
     private CancellationTokenSource? _reconnectCts;
     private CancellationTokenSource? _heartbeatCts;
     private bool _disposed;
-    
+
     private readonly ModbusMasterOptions _options;
-    
+
     public override string Address => $"{_options.IpAddress}:{_options.Port}";
-    
-    internal ModbusTcpMaster(string name, ModbusMasterOptions options, IModbusLogger logger) 
+
+    internal ModbusTcpMaster(string name, ModbusMasterOptions options, IModbusLogger logger)
         : base(name, logger)
     {
         _options = options;
         SlaveId = options.SlaveId;
     }
-    
+
     public override async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
         if (IsConnected)
@@ -35,27 +34,27 @@ internal class ModbusTcpMaster : ModbusMasterBase
         }
         await ConnectInternalAsync(cancellationToken);
     }
-    
+
     private async Task ConnectInternalAsync(CancellationToken cancellationToken = default)
     {
         State = ModbusConnectionState.Connecting;
-        
+
         try
         {
             _client = new TcpClient();
             await _client.ConnectAsync(_options.IpAddress, _options.Port, cancellationToken);
-            
+
             _client.ReceiveTimeout = _options.ReadTimeout;
             _client.SendTimeout = _options.WriteTimeout;
-            
+
             var factory = new ModbusFactory();
             InternalMaster = factory.CreateMaster(_client);
             InternalMaster.Transport.ReadTimeout = _options.ReadTimeout;
             InternalMaster.Transport.WriteTimeout = _options.WriteTimeout;
-            
+
             State = ModbusConnectionState.Connected;
             Logger.Log(LoggingLevel.Information, $"已连接到 {Address}");
-            
+
             if (_options.EnableHeartbeat)
                 StartHeartbeat();
         }
@@ -71,13 +70,13 @@ internal class ModbusTcpMaster : ModbusMasterBase
     {
         StopReconnect();
         StopHeartbeat();
-        
+
         if (!IsConnected && _client == null)
         {
             Logger.Log(LoggingLevel.Debug, "未连接");
             return;
         }
-        
+
         try
         {
             InternalMaster?.Dispose();
@@ -93,18 +92,18 @@ internal class ModbusTcpMaster : ModbusMasterBase
             throw;
         }
     }
-    
+
     public override void StopReconnect()
     {
         _reconnectCts?.Cancel();
         _reconnectCts = null;
     }
-    
+
     private void StartHeartbeat()
     {
         StopHeartbeat();
         _heartbeatCts = new CancellationTokenSource();
-        
+
         _ = Task.Run(async () =>
         {
             while (_heartbeatCts != null && !_heartbeatCts.Token.IsCancellationRequested)
@@ -113,7 +112,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
                 {
                     await Task.Delay(_options.HeartbeatInterval, _heartbeatCts.Token);
                     OnHeartbeat();
-                    
+
                     if (!CheckConnection())
                     {
                         Logger.Log(LoggingLevel.Warning, "心跳检测: 连接已断开");
@@ -129,13 +128,13 @@ internal class ModbusTcpMaster : ModbusMasterBase
             }
         });
     }
-    
+
     private void StopHeartbeat()
     {
         _heartbeatCts?.Cancel();
         _heartbeatCts = null;
     }
-    
+
     private bool CheckConnection()
     {
         try
@@ -150,7 +149,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
         }
         catch { return false; }
     }
-    
+
     private async Task HandleConnectionLostAsync()
     {
         if (State == ModbusConnectionState.Reconnecting) return;
@@ -159,29 +158,29 @@ internal class ModbusTcpMaster : ModbusMasterBase
         if (_options.AutoReconnect)
             await StartReconnectAsync();
     }
-    
+
     private void CleanupConnection()
     {
         try { InternalMaster?.Dispose(); _client?.Close(); } catch { }
         InternalMaster = null;
         _client = null;
     }
-    
+
     private async Task StartReconnectAsync()
     {
         if (!_options.AutoReconnect) return;
         if (_reconnectCts != null && !_reconnectCts.IsCancellationRequested) return;
-        
+
         State = ModbusConnectionState.Reconnecting;
         _reconnectCts = new CancellationTokenSource();
         var attempts = 0;
-        
+
         while (!_reconnectCts.Token.IsCancellationRequested)
         {
             attempts++;
             OnReconnecting(attempts);
             Logger.Log(LoggingLevel.Information, $"重连 {attempts}/{(_options.MaxReconnectAttempts == 0 ? "∞" : _options.MaxReconnectAttempts.ToString())}");
-            
+
             try
             {
                 await ConnectInternalAsync(_reconnectCts.Token);
@@ -200,12 +199,12 @@ internal class ModbusTcpMaster : ModbusMasterBase
         }
         State = ModbusConnectionState.Disconnected;
     }
-    
+
     protected override void Dispose(bool disposing)
     {
         if (_disposed) return;
         _disposed = true;
-        
+
         if (disposing)
         {
             StopReconnect();

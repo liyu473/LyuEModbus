@@ -13,7 +13,7 @@ public abstract class ModbusSlaveBase : IModbusSlaveClient
     private ModbusConnectionState _state = Disconnected;
     
     protected readonly IModbusLogger Logger;
-    protected NModbus.IModbusSlave? InternalSlave;
+    protected IModbusSlave? InternalSlave;
     
     public string ClientId { get; }
     public string Name { get; }

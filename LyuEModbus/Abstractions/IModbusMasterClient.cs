@@ -23,17 +23,17 @@ public interface IModbusMasterClient : IModbusMaster, IModbusClient
     void StopReconnect();
     
     /// <summary>
-    /// 重连事件，参数为（当前重连次数，最大重连次数）
+    /// 重连事件，参数为（当前重连次数，最大重连次数）（支持异步回调）
     /// </summary>
-    event Action<int, int>? Reconnecting;
+    event Func<int, int, Task>? Reconnecting;
     
     /// <summary>
-    /// 重连失败事件（达到最大重连次数后触发）
+    /// 重连失败事件（达到最大重连次数后触发）（支持异步回调）
     /// </summary>
-    event Action? ReconnectFailed;
+    event Func<Task>? ReconnectFailed;
     
     /// <summary>
-    /// 心跳事件
+    /// 心跳事件（支持异步回调）
     /// </summary>
-    event Action? Heartbeat;
+    event Func<Task>? Heartbeat;
 }

@@ -125,6 +125,7 @@ public partial class SlaveViewModel : ViewModelBase
                             ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" 
                             : "已停止";
                     });
+                    return Task.CompletedTask;
                 })
                 .OnHoldingRegisterWritten((address, oldValue, newValue) =>
                 {
@@ -134,6 +135,7 @@ public partial class SlaveViewModel : ViewModelBase
                             HoldingRegisters[address].Value = newValue;
                         _toastManager.ShowToast($"寄存器[{address}]: {oldValue} → {newValue}", type: Notification.Info);
                     });
+                    return Task.CompletedTask;
                 })
                 .OnCoilWritten((address, value) =>
                 {
@@ -143,13 +145,20 @@ public partial class SlaveViewModel : ViewModelBase
                             Coils[address].Value = value;
                         _toastManager.ShowToast($"线圈[{address}]: {value}", type: Notification.Info);
                     });
+                    return Task.CompletedTask;
                 })
                 .OnClientConnected(client =>
+                {
                     Dispatcher.UIThread.Post(() =>
-                        _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success)))
+                        _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success));
+                    return Task.CompletedTask;
+                })
                 .OnClientDisconnected(client =>
+                {
                     Dispatcher.UIThread.Post(() =>
-                        _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning)));
+                        _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning));
+                    return Task.CompletedTask;
+                });
 
             await _tcpSlave.StartAsync();
 

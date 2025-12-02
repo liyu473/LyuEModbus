@@ -161,7 +161,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
                 try
                 {
                     await Task.Delay(_options.HeartbeatInterval, _heartbeatCts.Token);
-                    OnHeartbeat();
+                    await OnHeartbeatAsync();
 
                     if (!CheckConnection())
                     {
@@ -230,7 +230,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
         while (!_reconnectCts.Token.IsCancellationRequested)
         {
             attempts++;
-            OnReconnecting(attempts, maxAttempts); // 传递当前次数和最大次数
+            await OnReconnectingAsync(attempts, maxAttempts); // 传递当前次数和最大次数
             Logger.Log(LoggingLevel.Information, $"重连 {attempts}/{maxDisplay}");
 
             try
@@ -246,7 +246,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
                 if (maxAttempts > 0 && attempts >= maxAttempts)
                 {
                     Logger.Log(LoggingLevel.Warning, $"重连失败，已达到最大重连次数 {maxAttempts}");
-                    OnReconnectFailed(); // 通知重连失败
+                    await OnReconnectFailedAsync(); // 通知重连失败
                     State = ModbusConnectionState.Disconnected;
                     _reconnectCts = null;
                     return;

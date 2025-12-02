@@ -38,7 +38,7 @@ public interface IModbusClient : IDisposable
     bool IsConnected { get; }
     
     /// <summary>
-    /// 连接状态变化事件
+    /// 连接状态变化事件（支持异步回调）
     /// </summary>
-    event Action<ModbusConnectionState>? StateChanged;
+    event Func<ModbusConnectionState, Task>? StateChanged;
 }

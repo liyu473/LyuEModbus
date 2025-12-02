@@ -31,7 +31,7 @@ public interface IModbusServer : IDisposable
     bool IsRunning { get; }
     
     /// <summary>
-    /// 运行状态变化事件
+    /// 运行状态变化事件（支持异步回调）
     /// </summary>
-    event Action<bool>? RunningChanged;
+    event Func<bool, Task>? RunningChanged;
 }

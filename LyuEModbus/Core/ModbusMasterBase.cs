@@ -67,8 +67,17 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
             if (_state == value) return;
             _state = value;
             Logger.Log(LoggingLevel.Information, $"状态变更: {value}");
-            StateChanged?.Invoke(value);
+            _ = OnStateChangedAsync(value);
         }
+    }
+    
+    /// <summary>
+    /// 异步触发状态变化事件
+    /// </summary>
+    private async Task OnStateChangedAsync(ModbusConnectionState state)
+    {
+        if (StateChanged != null)
+            await StateChanged.Invoke(state);
     }
     
     /// <summary>
@@ -83,24 +92,24 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
     public IModbusTransport Transport => InternalMaster?.Transport ?? throw new InvalidOperationException("未连接");
     
     /// <summary>
-    /// 连接状态变化事件
+    /// 连接状态变化事件（支持异步回调）
     /// </summary>
-    public event Action<ModbusConnectionState>? StateChanged;
+    public event Func<ModbusConnectionState, Task>? StateChanged;
     
     /// <summary>
-    /// 重连事件，参数为（当前重连次数，最大重连次数）
+    /// 重连事件，参数为（当前重连次数，最大重连次数）（支持异步回调）
     /// </summary>
-    public event Action<int, int>? Reconnecting;
+    public event Func<int, int, Task>? Reconnecting;
     
     /// <summary>
-    /// 重连失败事件（达到最大重连次数后触发）
+    /// 重连失败事件（达到最大重连次数后触发）（支持异步回调）
     /// </summary>
-    public event Action? ReconnectFailed;
+    public event Func<Task>? ReconnectFailed;
     
     /// <summary>
-    /// 心跳事件，每次心跳检测时触发
+    /// 心跳事件，每次心跳检测时触发（支持异步回调）
     /// </summary>
-    public event Action? Heartbeat;
+    public event Func<Task>? Heartbeat;
 
     /// <summary>
     /// 连接到从站
@@ -123,17 +132,29 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
     /// </summary>
     /// <param name="attempt">当前重连次数</param>
     /// <param name="maxAttempts">最大重连次数（0表示无限）</param>
-    protected void OnReconnecting(int attempt, int maxAttempts) => Reconnecting?.Invoke(attempt, maxAttempts);
+    protected async Task OnReconnectingAsync(int attempt, int maxAttempts)
+    {
+        if (Reconnecting != null)
+            await Reconnecting.Invoke(attempt, maxAttempts);
+    }
     
     /// <summary>
     /// 触发重连失败事件（供子类调用）
     /// </summary>
-    protected void OnReconnectFailed() => ReconnectFailed?.Invoke();
+    protected async Task OnReconnectFailedAsync()
+    {
+        if (ReconnectFailed != null)
+            await ReconnectFailed.Invoke();
+    }
     
     /// <summary>
     /// 触发心跳事件（供子类调用）
     /// </summary>
-    protected void OnHeartbeat() => Heartbeat?.Invoke();
+    protected async Task OnHeartbeatAsync()
+    {
+        if (Heartbeat != null)
+            await Heartbeat.Invoke();
+    }
 
     #region IModbusMaster 实现 - 代理到 InternalMaster(NModbus原生对象)去实现
 

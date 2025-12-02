@@ -66,8 +66,17 @@ public abstract class ModbusSlaveBase(string name, byte unitId, IModbusLogger lo
             if (_isRunning == value) return;
             _isRunning = value;
             Logger.Log(LoggingLevel.Information, $"运行状态: {(value ? "运行中" : "已停止")}");
-            RunningChanged?.Invoke(value);
+            _ = OnRunningChangedAsync(value);
         }
+    }
+    
+    /// <summary>
+    /// 异步触发运行状态变化事件
+    /// </summary>
+    private async Task OnRunningChangedAsync(bool isRunning)
+    {
+        if (RunningChanged != null)
+            await RunningChanged.Invoke(isRunning);
     }
 
     /// <summary>
@@ -82,33 +91,33 @@ public abstract class ModbusSlaveBase(string name, byte unitId, IModbusLogger lo
     public ISlaveDataStore DataStore => InternalSlave?.DataStore ?? throw new InvalidOperationException("从站未启动");
     
     /// <summary>
-    /// 运行状态变化事件
+    /// 运行状态变化事件（支持异步回调）
     /// </summary>
-    public event Action<bool>? RunningChanged;
+    public event Func<bool, Task>? RunningChanged;
     
     /// <summary>
-    /// 保持寄存器被主站修改事件
+    /// 保持寄存器被主站修改事件（支持异步回调）
     /// <para>参数：(地址, 旧值, 新值)</para>
     /// </summary>
-    public event Action<ushort, ushort, ushort>? HoldingRegisterWritten;
+    public event Func<ushort, ushort, ushort, Task>? HoldingRegisterWritten;
     
     /// <summary>
-    /// 线圈被主站修改事件
+    /// 线圈被主站修改事件（支持异步回调）
     /// <para>参数：(地址, 新值)</para>
     /// </summary>
-    public event Action<ushort, bool>? CoilWritten;
+    public event Func<ushort, bool, Task>? CoilWritten;
     
     /// <summary>
-    /// 主站客户端连接事件
+    /// 主站客户端连接事件（支持异步回调）
     /// <para>参数：客户端端点地址（如 "192.168.1.100:12345"）</para>
     /// </summary>
-    public event Action<string>? ClientConnected;
+    public event Func<string, Task>? ClientConnected;
     
     /// <summary>
-    /// 主站客户端断开事件
+    /// 主站客户端断开事件（支持异步回调）
     /// <para>参数：客户端端点地址</para>
     /// </summary>
-    public event Action<string>? ClientDisconnected;
+    public event Func<string, Task>? ClientDisconnected;
 
     /// <summary>
     /// 启动从站，开始监听连接
@@ -153,26 +162,38 @@ public abstract class ModbusSlaveBase(string name, byte unitId, IModbusLogger lo
     /// <summary>
     /// 触发保持寄存器被修改事件（供子类调用）
     /// </summary>
-    protected void OnHoldingRegisterWritten(ushort address, ushort oldValue, ushort newValue) 
-        => HoldingRegisterWritten?.Invoke(address, oldValue, newValue);
+    protected async Task OnHoldingRegisterWrittenAsync(ushort address, ushort oldValue, ushort newValue)
+    {
+        if (HoldingRegisterWritten != null)
+            await HoldingRegisterWritten.Invoke(address, oldValue, newValue);
+    }
     
     /// <summary>
     /// 触发线圈被修改事件（供子类调用）
     /// </summary>
-    protected void OnCoilWritten(ushort address, bool value) 
-        => CoilWritten?.Invoke(address, value);
+    protected async Task OnCoilWrittenAsync(ushort address, bool value)
+    {
+        if (CoilWritten != null)
+            await CoilWritten.Invoke(address, value);
+    }
     
     /// <summary>
     /// 触发客户端连接事件（供子类调用）
     /// </summary>
-    protected void OnClientConnected(string endpoint) 
-        => ClientConnected?.Invoke(endpoint);
+    protected async Task OnClientConnectedAsync(string endpoint)
+    {
+        if (ClientConnected != null)
+            await ClientConnected.Invoke(endpoint);
+    }
     
     /// <summary>
     /// 触发客户端断开事件（供子类调用）
     /// </summary>
-    protected void OnClientDisconnected(string endpoint) 
-        => ClientDisconnected?.Invoke(endpoint);
+    protected async Task OnClientDisconnectedAsync(string endpoint)
+    {
+        if (ClientDisconnected != null)
+            await ClientDisconnected.Invoke(endpoint);
+    }
     
     /// <summary>
     /// 应用 Modbus 请求（NModbus.IModbusSlave 接口实现）

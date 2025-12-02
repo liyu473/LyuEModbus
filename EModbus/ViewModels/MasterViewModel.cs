@@ -76,6 +76,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                             toastManager.ShowToast("连接成功", type: Notification.Success);
                         }
                     });
+                    return Task.CompletedTask;
                 })
                 .OnReconnecting((attempt, max) =>
                 {
@@ -86,6 +87,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                         var maxDisplay = max == 0 ? "∞" : max.ToString();
                         MasterStatus = $"重连中... ({attempt}/{maxDisplay})";
                     });
+                    return Task.CompletedTask;
                 }, intervalMs: 3000, maxAttempts: MaxReconnectAttempts)
                 .OnReconnectFailed(() =>
                 {
@@ -95,8 +97,9 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                         ReconnectAttempt = 0;
                         IsReconnecting = false;
                     });
+                    return Task.CompletedTask;
                 })
-                .OnHeartbeat(() => { }, intervalMs: 3000);
+                .OnHeartbeat(() => Task.CompletedTask, intervalMs: 3000);
 
             await _tcpMaster.ConnectAsync();
         }

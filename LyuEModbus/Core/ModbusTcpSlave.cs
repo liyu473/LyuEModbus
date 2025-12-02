@@ -127,7 +127,7 @@ internal class ModbusTcpSlave : ModbusSlaveBase
                 // 触发连接事件
                 try
                 {
-                    OnClientConnected(endpoint);
+                    await OnClientConnectedAsync(endpoint);
                     Logger.Log(LoggingLevel.Debug, $"已触发 ClientConnected 事件: {endpoint}");
                 }
                 catch (Exception eventEx)
@@ -206,13 +206,15 @@ internal class ModbusTcpSlave : ModbusSlaveBase
         }
         finally
         {
+            bool removed;
             lock (_connectedClients)
             {
-                if (_connectedClients.Remove(client))
-                {
-                    Logger.Log(LoggingLevel.Information, $"客户端断开: {endpoint}");
-                    OnClientDisconnected(endpoint);
-                }
+                removed = _connectedClients.Remove(client);
+            }
+            if (removed)
+            {
+                Logger.Log(LoggingLevel.Information, $"客户端断开: {endpoint}");
+                await OnClientDisconnectedAsync(endpoint);
             }
             try { client.Close(); } catch { }
         }
@@ -352,14 +354,14 @@ internal class ModbusTcpSlave : ModbusSlaveBase
             try
             {
                 await Task.Delay(_options.ChangeDetectionInterval, _cts.Token);
-                DetectChanges();
+                await DetectChangesAsync();
             }
             catch (OperationCanceledException) { break; }
             catch (Exception ex) { Logger.Log(LoggingLevel.Error, $"检测异常: {ex.Message}"); }
         }
     }
 
-    private void DetectChanges()
+    private async Task DetectChangesAsync()
     {
         if (InternalSlave?.DataStore == null || _lastHoldingValues == null || _lastCoilValues == null) return;
 
@@ -368,7 +370,7 @@ internal class ModbusTcpSlave : ModbusSlaveBase
         {
             if (currentHolding[i] != _lastHoldingValues[i])
             {
-                OnHoldingRegisterWritten((ushort)i, _lastHoldingValues[i], currentHolding[i]);
+                await OnHoldingRegisterWrittenAsync((ushort)i, _lastHoldingValues[i], currentHolding[i]);
                 _lastHoldingValues[i] = currentHolding[i];
             }
         }
@@ -378,7 +380,7 @@ internal class ModbusTcpSlave : ModbusSlaveBase
         {
             if (currentCoils[i] != _lastCoilValues[i])
             {
-                OnCoilWritten((ushort)i, currentCoils[i]);
+                await OnCoilWrittenAsync((ushort)i, currentCoils[i]);
                 _lastCoilValues[i] = currentCoils[i];
             }
         }

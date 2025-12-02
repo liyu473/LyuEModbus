@@ -38,22 +38,22 @@ public interface IModbusSlaveClient : IModbusSlave, IModbusServer
     ushort[]? ReadHoldingRegisters(ushort startAddress, ushort count);
     
     /// <summary>
-    /// 寄存器被修改事件 (地址, 旧值, 新值)
+    /// 寄存器被修改事件 (地址, 旧值, 新值)（支持异步回调）
     /// </summary>
-    event Action<ushort, ushort, ushort>? HoldingRegisterWritten;
+    event Func<ushort, ushort, ushort, Task>? HoldingRegisterWritten;
     
     /// <summary>
-    /// 线圈被修改事件 (地址, 值)
+    /// 线圈被修改事件 (地址, 值)（支持异步回调）
     /// </summary>
-    event Action<ushort, bool>? CoilWritten;
+    event Func<ushort, bool, Task>? CoilWritten;
     
     /// <summary>
-    /// 客户端连接事件
+    /// 客户端连接事件（支持异步回调）
     /// </summary>
-    event Action<string>? ClientConnected;
+    event Func<string, Task>? ClientConnected;
     
     /// <summary>
-    /// 客户端断开事件
+    /// 客户端断开事件（支持异步回调）
     /// </summary>
-    event Action<string>? ClientDisconnected;
+    event Func<string, Task>? ClientDisconnected;
 }

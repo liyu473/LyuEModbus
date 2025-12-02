@@ -14,9 +14,8 @@ using ShadUI;
 
 namespace EModbus.ViewModels;
 
-public partial class MasterViewModel(ToastManager toastManager, ModbusSettings settings) : ViewModelBase
+public partial class MasterViewModel(ToastManager toastManager, ModbusSettings settings, IEModbusFactory factory) : ViewModelBase
 {
-    private readonly EModbusFactory _factory = EModbusFactory.Default;
     private IModbusMasterClient? _tcpMaster;
 
     [ObservableProperty] public partial MasterSettings MasterSettings { get; set; } = settings.Master;
@@ -49,9 +48,9 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
 
         try
         {
-            _factory.RemoveMaster("main");
+            factory.RemoveMaster("main");
 
-            _tcpMaster = _factory.CreateTcpMaster("main")
+            _tcpMaster = factory.CreateTcpMaster("main")
                 .WithEndpoint(MasterSettings.IpAddress, MasterSettings.Port)
                 .WithSlaveId(MasterSettings.SlaveId)
                 .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
@@ -122,7 +121,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
         try
         {
             _tcpMaster?.Disconnect();
-            _factory.RemoveMaster("main");
+            factory.RemoveMaster("main");
             _tcpMaster = null;
             ReconnectAttempt = 0;
             MasterStatus = "未连接";

@@ -1,6 +1,5 @@
 using LyuEModbus.Abstractions;
 using LyuEModbus.Factory;
-using LyuEModbus.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -30,15 +29,10 @@ public static class ModbusServiceExtensions
         var options = new ModbusServiceOptions();
         configure(options);
 
-        services.AddSingleton<IModbusFactory>(sp =>
+        services.AddSingleton<IEModbusFactory>(sp =>
         {
             var loggerFactory = sp.GetService<ILoggerFactory>();
-            IModbusLoggerFactory modbusLoggerFactory =
-                loggerFactory != null
-                    ? new MicrosoftLoggerFactoryAdapter(loggerFactory)
-                    : new ConsoleModbusLoggerFactory();
-
-            var factory = new EModbusFactory(modbusLoggerFactory);
+            var factory = new EModbusFactory(loggerFactory!);
 
             foreach (var (name, masterConfigure) in options.MasterConfigurations)
             {

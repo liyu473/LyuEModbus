@@ -5,7 +5,7 @@ namespace LyuEModbus.Abstractions;
 /// <summary>
 /// Modbus 工厂接口
 /// </summary>
-public interface IModbusFactory
+public interface IEModbusFactory
 {
     IModbusMasterClient CreateTcpMaster(string name, ModbusMasterOptions? options = null);
     IModbusSlaveClient CreateTcpSlave(string name, ModbusSlaveOptions? options = null);

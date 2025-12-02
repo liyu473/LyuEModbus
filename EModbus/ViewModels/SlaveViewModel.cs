@@ -17,13 +17,14 @@ namespace EModbus.ViewModels;
 public partial class SlaveViewModel : ViewModelBase
 {
     private readonly ToastManager _toastManager;
-    private readonly EModbusFactory _factory = EModbusFactory.Default;
+    private readonly IEModbusFactory _factory;
     private IModbusSlaveClient? _tcpSlave;
 
-    public SlaveViewModel(ToastManager toastManager, ModbusSettings settings)
+    public SlaveViewModel(ToastManager toastManager, ModbusSettings settings, IEModbusFactory factory)
     {
         _toastManager = toastManager;
         SlaveSettings = settings.Slave;
+        _factory = factory;
         _ = InitializeRegistersAsync();
     }
 

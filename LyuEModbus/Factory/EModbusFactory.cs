@@ -2,23 +2,29 @@ using LyuEModbus.Abstractions;
 using LyuEModbus.Core;
 using LyuEModbus.Logging;
 using LyuEModbus.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
 
 namespace LyuEModbus.Factory;
 
 /// <summary>
-/// Modbus 工厂实现
+/// Modbus 工厂实现（仅支持DI）
 /// </summary>
-public class EModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory, IDisposable
+public class EModbusFactory : IEModbusFactory, IDisposable
 {
-    private readonly IModbusLoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+    private readonly MicrosoftModbusLoggerFactory _loggerFactory;
     private readonly ConcurrentDictionary<string, IModbusMasterClient> _masters = new();
     private readonly ConcurrentDictionary<string, IModbusSlaveClient> _slaves = new();
     private bool _disposed;
 
-    public static EModbusFactory Default { get; } = new(new ConsoleModbusLoggerFactory());
+    public EModbusFactory(ILoggerFactory loggerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _loggerFactory = new MicrosoftModbusLoggerFactory(loggerFactory);
+    }
 
-    public EModbusFactory() : this(NullModbusLoggerFactory.Instance) { }
+    public EModbusFactory() : this(NullLoggerFactory.Instance) { }
 
     #region 工厂实现
 

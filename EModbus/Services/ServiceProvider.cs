@@ -6,6 +6,8 @@ using EModbus.Model;
 using EModbus.ViewModels;
 using Jab;
 using LogExtension;
+using LyuEModbus.Abstractions;
+using LyuEModbus.Factory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ShadUI;
@@ -25,6 +27,7 @@ namespace EModbus.Services;
 [Singleton(typeof(PageManager), Factory = nameof(PageManagerFactory))]
 [Singleton(typeof(IConfiguration), Factory = nameof(ConfigurationFactory))]
 [Singleton(typeof(ModbusSettings), Factory = nameof(ModbusSettingsFactory))]
+[Singleton(typeof(IEModbusFactory), Factory = nameof(ModbusFactoryFactory))]
 public partial class ServiceProvider : IServiceProvider
 {
     // 可替换 ZlogFactory实例，这里使用默认配置
@@ -50,5 +53,10 @@ public partial class ServiceProvider : IServiceProvider
     public PageManager PageManagerFactory()
     {
         return new PageManager(this);
+    }
+
+    public static EModbusFactory ModbusFactoryFactory()
+    {
+        return new EModbusFactory(ZlogFactory.Factory);
     }
 }

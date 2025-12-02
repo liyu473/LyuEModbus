@@ -9,16 +9,16 @@ namespace LyuEModbus.Factory;
 /// <summary>
 /// Modbus 工厂实现
 /// </summary>
-public class ModbusClientFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory, IDisposable
+public class ModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory, IDisposable
 {
     private readonly IModbusLoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
     private readonly ConcurrentDictionary<string, IModbusMasterClient> _masters = new();
     private readonly ConcurrentDictionary<string, IModbusSlaveClient> _slaves = new();
     private bool _disposed;
 
-    public static ModbusClientFactory Default { get; } = new(new ConsoleModbusLoggerFactory());
+    public static ModbusFactory Default { get; } = new(new ConsoleModbusLoggerFactory());
 
-    public ModbusClientFactory() : this(NullModbusLoggerFactory.Instance) { }
+    public ModbusFactory() : this(NullModbusLoggerFactory.Instance) { }
 
     #region 工厂实现
 

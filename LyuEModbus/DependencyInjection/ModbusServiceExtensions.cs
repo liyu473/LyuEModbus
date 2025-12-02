@@ -38,7 +38,7 @@ public static class ModbusServiceExtensions
                     ? new MicrosoftLoggerFactoryAdapter(loggerFactory)
                     : new ConsoleModbusLoggerFactory();
 
-            var factory = new ModbusClientFactory(modbusLoggerFactory);
+            var factory = new ModbusFactory(modbusLoggerFactory);
 
             foreach (var (name, masterConfigure) in options.MasterConfigurations)
                 factory.CreateTcpMaster(name, masterConfigure);

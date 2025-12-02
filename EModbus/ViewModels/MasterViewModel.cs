@@ -15,7 +15,7 @@ namespace EModbus.ViewModels;
 
 public partial class MasterViewModel(ToastManager toastManager, ModbusSettings settings) : ViewModelBase
 {
-    private readonly ModbusClientFactory _factory = ModbusClientFactory.Default;
+    private readonly ModbusFactory _factory = ModbusFactory.Default;
     private IModbusMasterClient? _tcpMaster;
 
     [ObservableProperty] public partial MasterSettings MasterSettings { get; set; } = settings.Master;

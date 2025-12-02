@@ -1,5 +1,6 @@
 using LyuEModbus.Abstractions;
 using NModbus;
+using NModbus.Logging;
 
 namespace LyuEModbus.Logging;
 

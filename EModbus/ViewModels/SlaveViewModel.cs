@@ -15,7 +15,7 @@ namespace EModbus.ViewModels;
 public partial class SlaveViewModel : ViewModelBase
 {
     private readonly ToastManager _toastManager;
-    private readonly ModbusClientFactory _factory = ModbusClientFactory.Default;
+    private readonly ModbusFactory _factory = ModbusFactory.Default;
     private IModbusSlaveClient? _tcpSlave;
 
     public SlaveViewModel(ToastManager toastManager, ModbusSettings settings)

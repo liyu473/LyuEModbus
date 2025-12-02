@@ -70,6 +70,26 @@ public class EModbusFactory(IModbusLoggerFactory loggerFactory) : IModbusFactory
         return slave;
     }
 
+    /// <summary>
+    /// 获取或创建 TCP 主站（如果已存在则返回现有实例）
+    /// </summary>
+    public IModbusMasterClient GetOrCreateTcpMaster(string name, ModbusMasterOptions? options = null)
+    {
+        if (_masters.TryGetValue(name, out var existing))
+            return existing;
+        return CreateTcpMaster(name, options);
+    }
+
+    /// <summary>
+    /// 获取或创建 TCP 从站（如果已存在则返回现有实例）
+    /// </summary>
+    public IModbusSlaveClient GetOrCreateTcpSlave(string name, ModbusSlaveOptions? options = null)
+    {
+        if (_slaves.TryGetValue(name, out var existing))
+            return existing;
+        return CreateTcpSlave(name, options);
+    }
+
     public IEnumerable<IModbusMasterClient> GetAllMasters() => _masters.Values;
     public IEnumerable<IModbusSlaveClient> GetAllSlaves() => _slaves.Values;
 

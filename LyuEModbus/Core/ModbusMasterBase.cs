@@ -36,6 +36,11 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
     protected IModbusMaster? InternalMaster;
 
     /// <summary>
+    /// 轮询器实例
+    /// </summary>
+    public ModbusPoller? Poller { get; internal set; }
+
+    /// <summary>
     /// 客户端唯一标识（8位随机字符串）
     /// </summary>
     public string ClientId { get; } = Guid.NewGuid().ToString("N")[..8];
@@ -251,6 +256,8 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
     {
         if (disposing)
         {
+            Poller?.Dispose();
+            Poller = null;
             StateChanged = null;
             Reconnecting = null;
             ReconnectFailed = null;

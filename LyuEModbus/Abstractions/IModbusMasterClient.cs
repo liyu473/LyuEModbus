@@ -1,3 +1,4 @@
+using LyuEModbus.Core;
 using NModbus;
 
 namespace LyuEModbus.Abstractions;
@@ -7,6 +8,11 @@ namespace LyuEModbus.Abstractions;
 /// </summary>
 public interface IModbusMasterClient : IModbusMaster, IModbusClient
 {
+    /// <summary>
+    /// 轮询器（通过 WithPolling 配置后可用）
+    /// </summary>
+    ModbusPoller? Poller { get; }
+
     /// <summary>
     /// 连接到从站
     /// </summary>

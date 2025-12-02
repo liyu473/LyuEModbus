@@ -8,11 +8,10 @@ namespace LyuEModbus.Core;
 /// <summary>
 /// Modbus TCP 从站实现
 /// </summary>
-internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
+internal class ModbusTcpSlave : ModbusSlaveBase
 {
     private TcpListener? _listener;
     private IModbusSlaveNetwork? _slaveNetwork;
-    private NModbus.IModbusSlave? _slave;
     private CancellationTokenSource? _cts;
     private bool _disposed;
     private ushort[]? _lastHoldingValues;
@@ -22,19 +21,7 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
     private readonly ModbusSlaveOptions _options;
     
     public override string Address => $"{_options.IpAddress}:{_options.Port}";
-    public bool IsRunning { get; private set; }
-    
-    // IModbusSlave 实现
-    public byte UnitId => SlaveId;
-    public ISlaveDataStore DataStore => _slave?.DataStore ?? throw new InvalidOperationException("从站未启动");
-    
-    public IModbusMessage ApplyRequest(IModbusMessage request)
-        => _slave?.ApplyRequest(request) ?? throw new InvalidOperationException("从站未启动");
-    
-    public event Action<ushort, ushort, ushort>? HoldingRegisterWritten;
-    public event Action<ushort, bool>? CoilWritten;
-    public event Action<string>? ClientConnected;
-    public event Action<string>? ClientDisconnected;
+    public override bool IsRunning { get; protected set; }
     
     internal ModbusTcpSlave(string name, ModbusSlaveOptions options, IModbusLogger logger)
         : base(name, logger)
@@ -43,7 +30,7 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
         SlaveId = options.SlaveId;
     }
     
-    public async Task StartAsync(CancellationToken cancellationToken = default)
+    public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (IsRunning) return;
         
@@ -55,8 +42,8 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
             
             var factory = new ModbusFactory();
             _slaveNetwork = factory.CreateSlaveNetwork(_listener);
-            _slave = factory.CreateSlave(_options.SlaveId);
-            _slaveNetwork.AddSlave(_slave);
+            InternalSlave = factory.CreateSlave(_options.SlaveId);
+            _slaveNetwork.AddSlave(InternalSlave);
             
             InitializeData();
             _cts = new CancellationTokenSource();
@@ -84,17 +71,17 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
     
     private void InitializeData()
     {
-        if (_slave?.DataStore == null) return;
+        if (InternalSlave?.DataStore == null) return;
         
         _lastHoldingValues = new ushort[_options.InitHoldingRegisterCount];
         for (int i = 0; i < _lastHoldingValues.Length; i++)
             _lastHoldingValues[i] = (ushort)(i * 10);
-        _slave.DataStore.HoldingRegisters.WritePoints(0, _lastHoldingValues);
+        InternalSlave.DataStore.HoldingRegisters.WritePoints(0, _lastHoldingValues);
         
         _lastCoilValues = new bool[_options.InitCoilCount];
         for (int i = 0; i < _lastCoilValues.Length; i++)
             _lastCoilValues[i] = i % 2 == 0;
-        _slave.DataStore.CoilDiscretes.WritePoints(0, _lastCoilValues);
+        InternalSlave.DataStore.CoilDiscretes.WritePoints(0, _lastCoilValues);
     }
     
     private async Task MonitorClientsAsync()
@@ -109,7 +96,7 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
                     var endpoint = client.Client.RemoteEndPoint?.ToString() ?? "未知";
                     lock (_connectedClients) _connectedClients.Add(client);
                     Logger.Log(LoggingLevel.Information, $"客户端连接: {endpoint}");
-                    ClientConnected?.Invoke(endpoint);
+                    OnClientConnected(endpoint);
                 }
                 
                 lock (_connectedClients)
@@ -122,7 +109,7 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
                             var endpoint = client.Client.RemoteEndPoint?.ToString() ?? "未知";
                             _connectedClients.RemoveAt(i);
                             Logger.Log(LoggingLevel.Information, $"客户端断开: {endpoint}");
-                            ClientDisconnected?.Invoke(endpoint);
+                            OnClientDisconnected(endpoint);
                             client.Close();
                         }
                     }
@@ -165,30 +152,30 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
     
     private void DetectChanges()
     {
-        if (_slave?.DataStore == null || _lastHoldingValues == null || _lastCoilValues == null) return;
+        if (InternalSlave?.DataStore == null || _lastHoldingValues == null || _lastCoilValues == null) return;
         
-        var currentHolding = _slave.DataStore.HoldingRegisters.ReadPoints(0, (ushort)_lastHoldingValues.Length);
+        var currentHolding = InternalSlave.DataStore.HoldingRegisters.ReadPoints(0, (ushort)_lastHoldingValues.Length);
         for (int i = 0; i < currentHolding.Length; i++)
         {
             if (currentHolding[i] != _lastHoldingValues[i])
             {
-                HoldingRegisterWritten?.Invoke((ushort)i, _lastHoldingValues[i], currentHolding[i]);
+                OnHoldingRegisterWritten((ushort)i, _lastHoldingValues[i], currentHolding[i]);
                 _lastHoldingValues[i] = currentHolding[i];
             }
         }
         
-        var currentCoils = _slave.DataStore.CoilDiscretes.ReadPoints(0, (ushort)_lastCoilValues.Length);
+        var currentCoils = InternalSlave.DataStore.CoilDiscretes.ReadPoints(0, (ushort)_lastCoilValues.Length);
         for (int i = 0; i < currentCoils.Length; i++)
         {
             if (currentCoils[i] != _lastCoilValues[i])
             {
-                CoilWritten?.Invoke((ushort)i, currentCoils[i]);
+                OnCoilWritten((ushort)i, currentCoils[i]);
                 _lastCoilValues[i] = currentCoils[i];
             }
         }
     }
     
-    public void Stop()
+    public override void Stop()
     {
         if (!IsRunning) return;
         
@@ -198,7 +185,7 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
         
         _cts = null;
         _slaveNetwork = null;
-        _slave = null;
+        InternalSlave = null;
         _listener = null;
         _lastHoldingValues = null;
         _lastCoilValues = null;
@@ -208,30 +195,30 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
         Logger.Log(LoggingLevel.Information, "从站已停止");
     }
     
-    public void SetCoil(ushort address, bool value)
+    public override void SetCoil(ushort address, bool value)
     {
-        _slave?.DataStore?.CoilDiscretes.WritePoints(address, new[] { value });
+        InternalSlave?.DataStore?.CoilDiscretes.WritePoints(address, new[] { value });
         if (_lastCoilValues != null && address < _lastCoilValues.Length)
             _lastCoilValues[address] = value;
     }
     
-    public void SetHoldingRegister(ushort address, ushort value)
+    public override void SetHoldingRegister(ushort address, ushort value)
     {
-        _slave?.DataStore?.HoldingRegisters.WritePoints(address, new[] { value });
+        InternalSlave?.DataStore?.HoldingRegisters.WritePoints(address, new[] { value });
         if (_lastHoldingValues != null && address < _lastHoldingValues.Length)
             _lastHoldingValues[address] = value;
     }
     
-    public void SetHoldingRegisters(ushort startAddress, ushort[] values)
+    public override void SetHoldingRegisters(ushort startAddress, ushort[] values)
     {
-        _slave?.DataStore?.HoldingRegisters.WritePoints(startAddress, values);
+        InternalSlave?.DataStore?.HoldingRegisters.WritePoints(startAddress, values);
         if (_lastHoldingValues != null)
             for (int i = 0; i < values.Length && startAddress + i < _lastHoldingValues.Length; i++)
                 _lastHoldingValues[startAddress + i] = values[i];
     }
     
-    public ushort[]? ReadHoldingRegisters(ushort startAddress, ushort count)
-        => _slave?.DataStore?.HoldingRegisters.ReadPoints(startAddress, count);
+    public override ushort[]? ReadHoldingRegisters(ushort startAddress, ushort count)
+        => InternalSlave?.DataStore?.HoldingRegisters.ReadPoints(startAddress, count);
     
     protected override void Dispose(bool disposing)
     {
@@ -239,13 +226,8 @@ internal class ModbusTcpSlave : ModbusClientBase, IModbusSlaveClient
         _disposed = true;
         
         if (disposing)
-        {
             Stop();
-            HoldingRegisterWritten = null;
-            CoilWritten = null;
-            ClientConnected = null;
-            ClientDisconnected = null;
-        }
+        
         base.Dispose(disposing);
     }
 }

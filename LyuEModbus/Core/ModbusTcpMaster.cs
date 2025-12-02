@@ -34,7 +34,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
             return;
         }
         ValidateOptions();
-        await ConnectInternalAsync(cancellationToken);
+        await ConnectInternalAsync(isReconnecting: false, cancellationToken);
     }
 
     private void ValidateOptions()
@@ -49,7 +49,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
             throw new InvalidOperationException("未配置超时时间，请先调用 WithTimeout()");
     }
 
-    private async Task ConnectInternalAsync(CancellationToken cancellationToken = default, bool isReconnecting = false)
+    private async Task ConnectInternalAsync(bool isReconnecting = false, CancellationToken cancellationToken = default)
     {
         // 重连期间保持 Reconnecting 状态，不切换到 Connecting
         if (!isReconnecting)
@@ -235,7 +235,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
 
             try
             {
-                await ConnectInternalAsync(_reconnectCts.Token, isReconnecting: true);
+                await ConnectInternalAsync(isReconnecting: true, _reconnectCts.Token);
                 Logger.Log(LoggingLevel.Information, "重连成功");
                 return;
             }

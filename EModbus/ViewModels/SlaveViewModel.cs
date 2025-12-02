@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EModbus.Extensions;
@@ -117,27 +118,38 @@ public partial class SlaveViewModel : ViewModelBase
                 .WithDataStore((ushort)HoldingRegisters.Count, (ushort)Coils.Count)
                 .OnRunningChanged(running =>
                 {
-                    IsSlaveRunning = running;
-                    SlaveStatus = running 
-                        ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" 
-                        : "已停止";
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        IsSlaveRunning = running;
+                        SlaveStatus = running 
+                            ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" 
+                            : "已停止";
+                    });
                 })
                 .OnHoldingRegisterWritten((address, oldValue, newValue) =>
                 {
-                    if (address < HoldingRegisters.Count)
-                        HoldingRegisters[address].Value = newValue;
-                    _toastManager.ShowToast($"寄存器[{address}]: {oldValue} → {newValue}", type: Notification.Info);
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (address < HoldingRegisters.Count)
+                            HoldingRegisters[address].Value = newValue;
+                        _toastManager.ShowToast($"寄存器[{address}]: {oldValue} → {newValue}", type: Notification.Info);
+                    });
                 })
                 .OnCoilWritten((address, value) =>
                 {
-                    if (address < Coils.Count)
-                        Coils[address].Value = value;
-                    _toastManager.ShowToast($"线圈[{address}]: {value}", type: Notification.Info);
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (address < Coils.Count)
+                            Coils[address].Value = value;
+                        _toastManager.ShowToast($"线圈[{address}]: {value}", type: Notification.Info);
+                    });
                 })
                 .OnClientConnected(client =>
-                    _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success))
+                    Dispatcher.UIThread.Post(() =>
+                        _toastManager.ShowToast($"客户端已连接: {client}", type: Notification.Success)))
                 .OnClientDisconnected(client =>
-                    _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning));
+                    Dispatcher.UIThread.Post(() =>
+                        _toastManager.ShowToast($"客户端已断开: {client}", type: Notification.Warning)));
 
             await _tcpSlave.StartAsync();
 

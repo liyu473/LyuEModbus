@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EModbus.Extensions;
@@ -56,35 +57,44 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                 .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
                 .OnStateChanged(state =>
                 {
-                    IsMasterConnected = state == ModbusConnectionState.Connected;
-                    IsReconnecting = state == ModbusConnectionState.Reconnecting;
-                    
-                    MasterStatus = state switch
+                    Dispatcher.UIThread.Post(() =>
                     {
-                        ModbusConnectionState.Connected => $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
-                        ModbusConnectionState.Reconnecting => $"重连中... ({ReconnectAttempt}/{MaxReconnectAttempts})",
-                        ModbusConnectionState.Connecting => "连接中...",
-                        _ => "未连接"
-                    };
-                    
-                    if (state == ModbusConnectionState.Connected)
-                    {
-                        ReconnectAttempt = 0;
-                        toastManager.ShowToast("连接成功", type: Notification.Success);
-                    }
+                        IsMasterConnected = state == ModbusConnectionState.Connected;
+                        IsReconnecting = state == ModbusConnectionState.Reconnecting;
+                        
+                        MasterStatus = state switch
+                        {
+                            ModbusConnectionState.Connected => $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
+                            ModbusConnectionState.Reconnecting => $"重连中... ({ReconnectAttempt}/{MaxReconnectAttempts})",
+                            ModbusConnectionState.Connecting => "连接中...",
+                            _ => "未连接"
+                        };
+                        
+                        if (state == ModbusConnectionState.Connected)
+                        {
+                            ReconnectAttempt = 0;
+                            toastManager.ShowToast("连接成功", type: Notification.Success);
+                        }
+                    });
                 })
                 .OnReconnecting((attempt, max) =>
                 {
-                    ReconnectAttempt = attempt;
-                    MaxReconnectAttempts = max;
-                    var maxDisplay = max == 0 ? "∞" : max.ToString();
-                    MasterStatus = $"重连中... ({attempt}/{maxDisplay})";
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        ReconnectAttempt = attempt;
+                        MaxReconnectAttempts = max;
+                        var maxDisplay = max == 0 ? "∞" : max.ToString();
+                        MasterStatus = $"重连中... ({attempt}/{maxDisplay})";
+                    });
                 }, intervalMs: 3000, maxAttempts: MaxReconnectAttempts)
                 .OnReconnectFailed(() =>
                 {
-                    toastManager.ShowToast($"重连失败，已达到最大次数 {MaxReconnectAttempts}", type: Notification.Error);
-                    ReconnectAttempt = 0;
-                    IsReconnecting = false;
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        toastManager.ShowToast($"重连失败，已达到最大次数 {MaxReconnectAttempts}", type: Notification.Error);
+                        ReconnectAttempt = 0;
+                        IsReconnecting = false;
+                    });
                 })
                 .OnHeartbeat(() => { }, intervalMs: 3000);
 

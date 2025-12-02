@@ -1,4 +1,6 @@
-namespace LyuEModbus.Abstractions;
+using LyuEModbus.Abstractions;
+
+namespace LyuEModbus.Logging;
 
 /// <summary>
 /// 空日志工厂

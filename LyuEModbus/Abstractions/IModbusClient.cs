@@ -1,3 +1,5 @@
+using LyuEModbus.Models;
+
 namespace LyuEModbus.Abstractions;
 
 /// <summary>

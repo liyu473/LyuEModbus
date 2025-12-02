@@ -1,4 +1,4 @@
-namespace LyuEModbus.Abstractions;
+namespace LyuEModbus.Models;
 
 /// <summary>
 /// Modbus 客户端连接状态

@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using LyuEModbus.Abstractions;
+using LyuEModbus.Models;
 using NModbus;
 
 namespace LyuEModbus.Core;
@@ -10,7 +11,7 @@ namespace LyuEModbus.Core;
 internal class ModbusTcpMaster : ModbusClientBase, IModbusMasterClient
 {
     private TcpClient? _client;
-    private NModbus.IModbusMaster? _master;
+    private IModbusMaster? _master;
     private CancellationTokenSource? _reconnectCts;
     private CancellationTokenSource? _heartbeatCts;
     private bool _disposed;
@@ -287,7 +288,7 @@ internal class ModbusTcpMaster : ModbusClientBase, IModbusMasterClient
     public Task<ushort[]> ReadWriteMultipleRegistersAsync(byte slaveAddress, ushort startReadAddress, ushort numberOfPointsToRead, ushort startWriteAddress, ushort[] writeData)
         => _master?.ReadWriteMultipleRegistersAsync(slaveAddress, startReadAddress, numberOfPointsToRead, startWriteAddress, writeData) ?? throw new InvalidOperationException("未连接");
     
-    public TResponse ExecuteCustomMessage<TResponse>(NModbus.IModbusMessage request) where TResponse : NModbus.IModbusMessage, new()
+    public TResponse ExecuteCustomMessage<TResponse>(IModbusMessage request) where TResponse : IModbusMessage, new()
     {
         if (_master == null) throw new InvalidOperationException("未连接");
         return _master.ExecuteCustomMessage<TResponse>(request);

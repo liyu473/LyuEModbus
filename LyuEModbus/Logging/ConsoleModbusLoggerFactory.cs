@@ -1,4 +1,6 @@
-namespace LyuEModbus.Abstractions;
+using LyuEModbus.Abstractions;
+
+namespace LyuEModbus.Logging;
 
 /// <summary>
 /// 控制台日志工厂

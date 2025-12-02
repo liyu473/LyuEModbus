@@ -1,4 +1,5 @@
 using LyuEModbus.Abstractions;
+using LyuEModbus.Models;
 using NModbus;
 
 namespace LyuEModbus.Core;

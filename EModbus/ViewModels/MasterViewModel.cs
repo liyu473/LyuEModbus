@@ -8,6 +8,7 @@ using Extensions;
 using LyuEModbus.Abstractions;
 using LyuEModbus.Extensions;
 using LyuEModbus.Factory;
+using LyuEModbus.Models;
 using ShadUI;
 
 namespace EModbus.ViewModels;

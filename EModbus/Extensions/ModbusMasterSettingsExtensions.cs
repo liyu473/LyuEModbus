@@ -1,5 +1,5 @@
 using EModbus.Model;
-using LyuEModbus.Abstractions;
+using LyuEModbus.Models;
 
 namespace EModbus.Extensions;
 

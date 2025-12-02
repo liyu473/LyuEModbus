@@ -1,4 +1,4 @@
-namespace LyuEModbus.Abstractions;
+namespace LyuEModbus.Models;
 
 /// <summary>
 /// Modbus 主站配置

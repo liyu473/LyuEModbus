@@ -1,6 +1,7 @@
+using LyuEModbus.Abstractions;
 using NModbus;
 
-namespace LyuEModbus.Abstractions;
+namespace LyuEModbus.Logging;
 
 /// <summary>
 /// 控制台日志记录器

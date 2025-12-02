@@ -1,5 +1,7 @@
 using LyuEModbus.Abstractions;
 using LyuEModbus.Core;
+using LyuEModbus.Logging;
+using LyuEModbus.Models;
 using System.Collections.Concurrent;
 
 namespace LyuEModbus.Factory;

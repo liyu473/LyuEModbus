@@ -1,6 +1,6 @@
 using NModbus;
 
-namespace LyuEModbus.Abstractions;
+namespace LyuEModbus.Logging;
 
 /// <summary>
 /// 空日志记录器

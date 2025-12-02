@@ -159,11 +159,11 @@ internal class ModbusTcpSlave : ModbusSlaveBase
             var stream = client.GetStream();
             var buffer = new byte[256];
             
-            while (_cts != null && !_cts.Token.IsCancellationRequested && IsClientConnected(client))
+            while (_cts != null && !_cts.Token.IsCancellationRequested && client.Connected)
             {
                 try
                 {
-                    // 读取 MBAP 头 (7 bytes) + PDU
+                    // 读取 MBAP 头 (7 bytes) + PDU，ReadAsync 会阻塞直到有数据或连接断开
                     var bytesRead = await stream.ReadAsync(buffer.AsMemory(), _cts.Token);
                     if (bytesRead == 0) break; // 客户端断开
                     
@@ -330,21 +330,6 @@ internal class ModbusTcpSlave : ModbusSlaveBase
         InternalSlave!.DataStore!.CoilDiscretes.WritePoints(startAddress, values);
         
         return [0x0F, data[offset], data[offset + 1], data[offset + 2], data[offset + 3]];
-    }
-
-    private static bool IsClientConnected(TcpClient client)
-    {
-        try
-        {
-            if (client.Client == null || !client.Connected) return false;
-            if (client.Client.Poll(0, SelectMode.SelectRead))
-            {
-                byte[] buff = new byte[1];
-                return client.Client.Receive(buff, SocketFlags.Peek) != 0;
-            }
-            return true;
-        }
-        catch { return false; }
     }
 
     private async Task MonitorChangesAsync()

@@ -3,15 +3,10 @@ using NModbus;
 namespace LyuEModbus.Abstractions;
 
 /// <summary>
-/// 扩展的 Modbus 从站接口（继承 NModbus.IModbusSlave + IModbusClient）
+/// Modbus 从站接口（继承 NModbus.IModbusSlave + IModbusServer）
 /// </summary>
-public interface IModbusSlaveClient : IModbusSlave, IModbusClient
+public interface IModbusSlaveClient : IModbusSlave, IModbusServer
 {
-    /// <summary>
-    /// 是否正在运行
-    /// </summary>
-    bool IsRunning { get; }
-    
     /// <summary>
     /// 启动从站
     /// </summary>

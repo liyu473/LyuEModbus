@@ -18,33 +18,37 @@ public static class ModbusServiceExtensions
     {
         return services.AddModbus(_ => { });
     }
-    
+
     /// <summary>
     /// 添加 Modbus 服务并配置
     /// </summary>
-    public static IServiceCollection AddModbus(this IServiceCollection services, Action<ModbusServiceOptions> configure)
+    public static IServiceCollection AddModbus(
+        this IServiceCollection services,
+        Action<ModbusServiceOptions> configure
+    )
     {
         var options = new ModbusServiceOptions();
         configure(options);
-        
+
         services.AddSingleton<IModbusFactory>(sp =>
         {
             var loggerFactory = sp.GetService<ILoggerFactory>();
-            IModbusLoggerFactory modbusLoggerFactory = loggerFactory != null
-                ? new MicrosoftLoggerFactoryAdapter(loggerFactory)
-                : new ConsoleModbusLoggerFactory();
-            
+            IModbusLoggerFactory modbusLoggerFactory =
+                loggerFactory != null
+                    ? new MicrosoftLoggerFactoryAdapter(loggerFactory)
+                    : new ConsoleModbusLoggerFactory();
+
             var factory = new ModbusClientFactory(modbusLoggerFactory);
-            
+
             foreach (var (name, masterConfigure) in options.MasterConfigurations)
                 factory.CreateTcpMaster(name, masterConfigure);
-            
+
             foreach (var (name, slaveConfigure) in options.SlaveConfigurations)
                 factory.CreateTcpSlave(name, slaveConfigure);
-            
+
             return factory;
         });
-        
+
         return services;
     }
 }

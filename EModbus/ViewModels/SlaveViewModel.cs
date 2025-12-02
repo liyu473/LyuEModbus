@@ -8,7 +8,6 @@ using EModbus.Model;
 using Extensions;
 using LyuEModbus.Abstractions;
 using LyuEModbus.Factory;
-using LyuEModbus.Models;
 using ShadUI;
 
 namespace EModbus.ViewModels;
@@ -118,10 +117,10 @@ public partial class SlaveViewModel : ViewModelBase
                 opt.InitCoilCount = (ushort)Coils.Count;
             });
             
-            _tcpSlave.StateChanged += state =>
+            _tcpSlave.RunningChanged += running =>
             {
-                IsSlaveRunning = state == ModbusConnectionState.Connected;
-                SlaveStatus = state == ModbusConnectionState.Connected 
+                IsSlaveRunning = running;
+                SlaveStatus = running 
                     ? $"运行中 - {SlaveSettings.IpAddress}:{SlaveSettings.Port}" 
                     : "已停止";
             };

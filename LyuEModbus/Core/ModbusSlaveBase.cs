@@ -1,50 +1,52 @@
 using LyuEModbus.Abstractions;
-using LyuEModbus.Models;
 using NModbus;
-using static LyuEModbus.Models.ModbusConnectionState;
 
 namespace LyuEModbus.Core;
 
 /// <summary>
 /// Modbus 从站抽象基类
 /// </summary>
-public abstract class ModbusSlaveBase(string name, IModbusLogger logger) : IModbusSlaveClient
+public abstract class ModbusSlaveBase : IModbusSlaveClient
 {
-    private ModbusConnectionState _state = Disconnected;
+    private bool _isRunning;
     
-    protected readonly IModbusLogger Logger = logger;
-    protected IModbusSlave? InternalSlave;
-
-    public string ClientId { get; } = Guid.NewGuid().ToString("N")[..8];
-    public string Name { get; } = name;
+    protected readonly IModbusLogger Logger;
+    protected NModbus.IModbusSlave? InternalSlave;
+    
+    public string ServerId { get; }
+    public string Name { get; }
     public abstract string Address { get; }
-    public byte SlaveId { get; protected set; }
-    public virtual bool IsRunning { get; protected set; }
     
-    public ModbusConnectionState State
+    public bool IsRunning
     {
-        get => _state;
+        get => _isRunning;
         protected set
         {
-            if (_state == value) return;
-            _state = value;
-            Logger.Log(LoggingLevel.Information, $"状态变更: {value}");
-            StateChanged?.Invoke(value);
+            if (_isRunning == value) return;
+            _isRunning = value;
+            Logger.Log(LoggingLevel.Information, $"运行状态: {(value ? "运行中" : "已停止")}");
+            RunningChanged?.Invoke(value);
         }
     }
     
-    public bool IsConnected => State == Connected;
-    
     // IModbusSlave
-    public byte UnitId => SlaveId;
+    public byte UnitId { get; protected set; }
     public ISlaveDataStore DataStore => InternalSlave?.DataStore ?? throw new InvalidOperationException("从站未启动");
     
-    public event Action<ModbusConnectionState>? StateChanged;
+    public event Action<bool>? RunningChanged;
     public event Action<ushort, ushort, ushort>? HoldingRegisterWritten;
     public event Action<ushort, bool>? CoilWritten;
     public event Action<string>? ClientConnected;
     public event Action<string>? ClientDisconnected;
-
+    
+    protected ModbusSlaveBase(string name, byte unitId, IModbusLogger logger)
+    {
+        ServerId = Guid.NewGuid().ToString("N")[..8];
+        Name = name;
+        UnitId = unitId;
+        Logger = logger;
+    }
+    
     public abstract Task StartAsync(CancellationToken cancellationToken = default);
     public abstract void Stop();
     public abstract void SetCoil(ushort address, bool value);
@@ -72,7 +74,7 @@ public abstract class ModbusSlaveBase(string name, IModbusLogger logger) : IModb
     {
         if (disposing)
         {
-            StateChanged = null;
+            RunningChanged = null;
             HoldingRegisterWritten = null;
             CoilWritten = null;
             ClientConnected = null;

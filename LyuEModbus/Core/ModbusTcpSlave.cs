@@ -1,6 +1,7 @@
 using LyuEModbus.Models;
 using NModbus;
 using System.Net.Sockets;
+using LyuEModbus.Abstractions;
 
 namespace LyuEModbus.Core;
 
@@ -20,13 +21,11 @@ internal class ModbusTcpSlave : ModbusSlaveBase
     private readonly ModbusSlaveOptions _options;
 
     public override string Address => $"{_options.IpAddress}:{_options.Port}";
-    public override bool IsRunning { get; protected set; }
 
     internal ModbusTcpSlave(string name, ModbusSlaveOptions options, IModbusLogger logger)
-        : base(name, logger)
+        : base(name, options.SlaveId, logger)
     {
         _options = options;
-        SlaveId = options.SlaveId;
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken = default)
@@ -58,7 +57,6 @@ internal class ModbusTcpSlave : ModbusSlaveBase
             _ = Task.Run(MonitorChangesAsync, _cts.Token);
 
             IsRunning = true;
-            State = ModbusConnectionState.Connected;
             Logger.Log(LoggingLevel.Information, $"从站已启动 - {Address}");
         }
         catch (Exception ex)
@@ -190,7 +188,6 @@ internal class ModbusTcpSlave : ModbusSlaveBase
         _lastCoilValues = null;
 
         IsRunning = false;
-        State = ModbusConnectionState.Disconnected;
         Logger.Log(LoggingLevel.Information, "从站已停止");
     }
 

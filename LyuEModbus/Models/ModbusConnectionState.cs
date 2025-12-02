@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace LyuEModbus.Models;
 
 /// <summary>
@@ -5,8 +7,27 @@ namespace LyuEModbus.Models;
 /// </summary>
 public enum ModbusConnectionState
 {
+    /// <summary>
+    /// 未连接
+    /// </summary>
+    [Description("未连接")]
     Disconnected,
+
+    /// <summary>
+    /// 连接中
+    /// </summary>
+    [Description("连接中")]
     Connecting,
+
+    /// <summary>
+    /// 已连接
+    /// </summary>
+    [Description("已连接")]
     Connected,
+
+    /// <summary>
+    /// 重连中
+    /// </summary>
+    [Description("重连中")]
     Reconnecting
 }

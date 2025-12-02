@@ -119,7 +119,7 @@ public static partial class ModbusMasterExtensions
         {
             var result = await master.ReadCoilsAsync(master.SlaveId, address, 1);
             return result[0];
-        }, retryCount, onError, $"ReadCoil({address})");
+        }, retryCount, onError);
     }
 
     /// <summary>
@@ -144,7 +144,7 @@ public static partial class ModbusMasterExtensions
             for (int i = 0; i < result.Length; i++)
                 dict[(ushort)(startAddress + i)] = result[i];
             return dict;
-        }, retryCount, onError, $"ReadCoils({startAddress}, {count})");
+        }, retryCount, onError);
     }
 
     #endregion

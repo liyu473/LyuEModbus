@@ -9,7 +9,7 @@ namespace EModbus.Services;
 public class NavigationService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly Dictionary<string, Type> _pages = new();
+    private readonly Dictionary<string, Type> _pages = [];
 
     public NavigationService(IServiceProvider serviceProvider)
     {

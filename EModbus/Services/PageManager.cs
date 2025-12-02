@@ -11,14 +11,15 @@ public sealed class PageManager(ServiceProvider serviceProvider)
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <exception cref="InvalidOperationException"></exception>
-    public void Navigate<T>() where T : INavigable
+    public void Navigate<T>()
+        where T : INavigable
     {
-        var attr = typeof(T).GetCustomAttribute<PageAttribute>();
-        if (attr is null) throw new InvalidOperationException("Not a valid page type, missing PageAttribute");
-
-        var page = serviceProvider.GetService<T>();
-        if (page is null) throw new InvalidOperationException("Page not found");
-
+        var attr =
+            typeof(T).GetCustomAttribute<PageAttribute>()
+            ?? throw new InvalidOperationException("Not a valid page type, missing PageAttribute");
+        var page =
+            serviceProvider.GetService<T>()
+            ?? throw new InvalidOperationException("Page not found");
         OnNavigate?.Invoke(page, attr.Route);
     }
 

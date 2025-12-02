@@ -5,19 +5,13 @@ using EModbus.Model;
 namespace EModbus.ViewModels;
 
 [Page("home")]
-public partial class HomeViewModel : ViewModelBase, INavigable
+public partial class HomeViewModel(SlaveViewModel slaveViewModel, MasterViewModel masterViewModel) : ViewModelBase, INavigable
 {
-    public HomeViewModel(SlaveViewModel slaveViewModel, MasterViewModel masterViewModel)
-    {
-        SlaveViewModel = slaveViewModel;
-        MasterViewModel = masterViewModel;
-    }
+    [ObservableProperty]
+    public partial SlaveViewModel SlaveViewModel { get; set; } = slaveViewModel;
 
     [ObservableProperty]
-    public partial SlaveViewModel SlaveViewModel { get; set; }
-
-    [ObservableProperty]
-    public partial MasterViewModel MasterViewModel { get; set; }
+    public partial MasterViewModel MasterViewModel { get; set; } = masterViewModel;
 
     [ObservableProperty]
     public partial int TabSelectedIndex { get; set; } = 0;

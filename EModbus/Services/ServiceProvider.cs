@@ -31,7 +31,14 @@ namespace EModbus.Services;
 public partial class ServiceProvider : IServiceProvider
 {
     // 可替换 ZlogFactory实例，这里使用默认配置
-    public static ILogger<T> CreateLoggerGeneric<T>() => ZlogFactory.Get<T>();
+    public static ILogger<T> CreateLoggerGeneric<T>()
+    {
+        // ZlogFactory.ConfigureDefaults(config =>
+        // {
+        //     config.AdditionalConfiguration = logging => logging.AddZLoggerConsoleWithTimestamp();
+        // });
+        return ZlogFactory.Get<T>();
+    }
 
     public static ThemeWatcher ThemeWatcherFactory()
     {

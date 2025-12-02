@@ -29,7 +29,7 @@ public static partial class ModbusMasterExtensions
             try
             {
                 var result = await action();
-                client.Log(ModbusLogLevel.Debug, $"{operationName} 成功");
+                client.Log(ModbusLogLevel.Debug, $"{operationName} 成功: {result}");
                 return result;
             }
             catch (Exception ex)
@@ -56,7 +56,8 @@ public static partial class ModbusMasterExtensions
         Func<Task<T>> action,
         int retryCount,
         Func<Exception, Task>? onError,
-        string operationName) where T : class
+        string operationName,
+        Func<T, string>? formatResult = null) where T : class
     {
         var attempts = 0;
         while (true)
@@ -64,7 +65,8 @@ public static partial class ModbusMasterExtensions
             try
             {
                 var result = await action();
-                client.Log(ModbusLogLevel.Debug, $"{operationName} 成功");
+                var resultStr = formatResult != null ? formatResult(result) : result.ToString();
+                client.Log(ModbusLogLevel.Debug, $"{operationName} 成功: {resultStr}");
                 return result;
             }
             catch (Exception ex)
@@ -153,7 +155,8 @@ public static partial class ModbusMasterExtensions
             for (int i = 0; i < result.Length; i++)
                 dict[(ushort)(startAddress + i)] = result[i];
             return dict;
-        }, retryCount, onError, $"ReadCoils({startAddress}, {count})");
+        }, retryCount, onError, $"ReadCoils({startAddress}, {count})",
+        d => string.Join(", ", d.Select(kv => $"{kv.Key}={kv.Value}")));
     }
 
     #endregion
@@ -245,7 +248,8 @@ public static partial class ModbusMasterExtensions
             for (int i = 0; i < result.Length; i++)
                 dict[(ushort)(startAddress + i)] = result[i];
             return dict;
-        }, retryCount, onError, $"ReadHoldingRegisters({startAddress}, {count})");
+        }, retryCount, onError, $"ReadHoldingRegisters({startAddress}, {count})",
+        d => string.Join(", ", d.Select(kv => $"{kv.Key}={kv.Value}")));
     }
 
     /// <summary>
@@ -416,7 +420,8 @@ public static partial class ModbusMasterExtensions
             for (int i = 0; i < result.Length; i++)
                 dict[(ushort)(startAddress + i)] = result[i];
             return dict;
-        }, retryCount, onError, $"ReadInputRegisters({startAddress}, {count})");
+        }, retryCount, onError, $"ReadInputRegisters({startAddress}, {count})",
+        d => string.Join(", ", d.Select(kv => $"{kv.Key}={kv.Value}")));
     }
 
     #endregion
@@ -456,7 +461,8 @@ public static partial class ModbusMasterExtensions
             for (int i = 0; i < result.Length; i++)
                 dict[(ushort)(startAddress + i)] = result[i];
             return dict;
-        }, retryCount, onError, $"ReadDiscreteInputs({startAddress}, {count})");
+        }, retryCount, onError, $"ReadDiscreteInputs({startAddress}, {count})",
+        d => string.Join(", ", d.Select(kv => $"{kv.Key}={kv.Value}")));
     }
 
     #endregion

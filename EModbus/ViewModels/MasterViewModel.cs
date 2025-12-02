@@ -50,7 +50,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
         try
         {
             _factory.RemoveMaster("main");
-            
+
             _tcpMaster = _factory.CreateTcpMaster("main")
                 .WithEndpoint(MasterSettings.IpAddress, MasterSettings.Port)
                 .WithSlaveId(MasterSettings.SlaveId)
@@ -61,7 +61,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                     {
                         IsMasterConnected = state == ModbusConnectionState.Connected;
                         IsReconnecting = state == ModbusConnectionState.Reconnecting;
-                        
+
                         MasterStatus = state switch
                         {
                             ModbusConnectionState.Connected => $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
@@ -69,7 +69,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                             ModbusConnectionState.Connecting => "连接中...",
                             _ => "未连接"
                         };
-                        
+
                         if (state == ModbusConnectionState.Connected)
                         {
                             ReconnectAttempt = 0;
@@ -99,7 +99,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                     });
                     return Task.CompletedTask;
                 })
-                .OnHeartbeat(() => Task.CompletedTask, intervalMs: 3000);
+                .WithHeartbeat(3000);
 
             await _tcpMaster.ConnectAsync();
         }

@@ -83,8 +83,29 @@ public static class ModbusMasterClientExtensions
     }
 
     /// <summary>
-    /// 订阅心跳事件并启用心跳检测（支持异步回调）
+    /// 启用心跳检测（用于检测连接是否断开），可以响应状态事件
+    /// <para>
+    /// 重要：如果不启用心跳检测，当连接意外断开时，状态不会自动更新，
+    /// </para>
+    /// <para>建议在生产环境中始终启用心跳检测。</para>
     /// </summary>
+    /// <param name="master">主站实例</param>
+    /// <param name="intervalMs">心跳检测间隔（毫秒），默认 5000ms</param>
+    /// <returns>主站实例（支持链式调用）</returns>
+    public static IModbusMasterClient WithHeartbeat(this IModbusMasterClient master, int intervalMs = 5000)
+    {
+        if (master is ModbusTcpMaster tcpMaster)
+            tcpMaster.ConfigureHeartbeat(true, intervalMs);
+        return master;
+    }
+
+    /// <summary>
+    /// 订阅心跳事件并启用心跳检测（支持异步回调）
+    /// <para>每次心跳检测时触发回调，可用于更新界面或记录日志。</para>
+    /// </summary>
+    /// <param name="master">主站实例</param>
+    /// <param name="handler">心跳回调</param>
+    /// <param name="intervalMs">心跳检测间隔（毫秒），默认 5000ms</param>
     public static IModbusMasterClient OnHeartbeat(this IModbusMasterClient master, Func<Task> handler, int intervalMs = 5000)
     {
         if (master is ModbusTcpMaster tcpMaster)

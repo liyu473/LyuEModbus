@@ -88,9 +88,14 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
     public event Action<ModbusConnectionState>? StateChanged;
     
     /// <summary>
-    /// 重连事件，参数为当前重连次数
+    /// 重连事件，参数为（当前重连次数，最大重连次数）
     /// </summary>
-    public event Action<int>? Reconnecting;
+    public event Action<int, int>? Reconnecting;
+    
+    /// <summary>
+    /// 重连失败事件（达到最大重连次数后触发）
+    /// </summary>
+    public event Action? ReconnectFailed;
     
     /// <summary>
     /// 心跳事件，每次心跳检测时触发
@@ -117,7 +122,13 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
     /// 触发重连事件（供子类调用）
     /// </summary>
     /// <param name="attempt">当前重连次数</param>
-    protected void OnReconnecting(int attempt) => Reconnecting?.Invoke(attempt);
+    /// <param name="maxAttempts">最大重连次数（0表示无限）</param>
+    protected void OnReconnecting(int attempt, int maxAttempts) => Reconnecting?.Invoke(attempt, maxAttempts);
+    
+    /// <summary>
+    /// 触发重连失败事件（供子类调用）
+    /// </summary>
+    protected void OnReconnectFailed() => ReconnectFailed?.Invoke();
     
     /// <summary>
     /// 触发心跳事件（供子类调用）
@@ -221,6 +232,7 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
         {
             StateChanged = null;
             Reconnecting = null;
+            ReconnectFailed = null;
             Heartbeat = null;
         }
     }

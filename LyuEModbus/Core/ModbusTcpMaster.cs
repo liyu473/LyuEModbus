@@ -49,9 +49,11 @@ internal class ModbusTcpMaster : ModbusMasterBase
             throw new InvalidOperationException("未配置超时时间，请先调用 WithTimeout()");
     }
 
-    private async Task ConnectInternalAsync(CancellationToken cancellationToken = default)
+    private async Task ConnectInternalAsync(CancellationToken cancellationToken = default, bool isReconnecting = false)
     {
-        State = ModbusConnectionState.Connecting;
+        // 重连期间保持 Reconnecting 状态，不切换到 Connecting
+        if (!isReconnecting)
+            State = ModbusConnectionState.Connecting;
 
         try
         {
@@ -66,6 +68,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
             InternalMaster.Transport.ReadTimeout = _options.ReadTimeout!.Value;
             InternalMaster.Transport.WriteTimeout = _options.WriteTimeout!.Value;
 
+            _reconnectCts = null; // 连接成功，清理重连令牌
             State = ModbusConnectionState.Connected;
             Logger.Log(LoggingLevel.Information, $"已连接到 {Address}");
 
@@ -74,7 +77,9 @@ internal class ModbusTcpMaster : ModbusMasterBase
         }
         catch (Exception ex)
         {
-            State = ModbusConnectionState.Disconnected;
+            // 重连期间失败不改变状态，由 StartReconnectAsync 控制
+            if (!isReconnecting)
+                State = ModbusConnectionState.Disconnected;
             Logger.Log(LoggingLevel.Error, $"连接失败: {ex.Message}");
             throw;
         }
@@ -216,33 +221,51 @@ internal class ModbusTcpMaster : ModbusMasterBase
         if (!_options.AutoReconnect) return;
         if (_reconnectCts != null && !_reconnectCts.IsCancellationRequested) return;
 
-        State = ModbusConnectionState.Reconnecting;
         _reconnectCts = new CancellationTokenSource();
+        State = ModbusConnectionState.Reconnecting;
         var attempts = 0;
+        var maxAttempts = _options.MaxReconnectAttempts;
+        var maxDisplay = maxAttempts == 0 ? "∞" : maxAttempts.ToString();
 
         while (!_reconnectCts.Token.IsCancellationRequested)
         {
             attempts++;
-            OnReconnecting(attempts);
-            Logger.Log(LoggingLevel.Information, $"重连 {attempts}/{(_options.MaxReconnectAttempts == 0 ? "∞" : _options.MaxReconnectAttempts.ToString())}");
+            OnReconnecting(attempts, maxAttempts); // 传递当前次数和最大次数
+            Logger.Log(LoggingLevel.Information, $"重连 {attempts}/{maxDisplay}");
 
             try
             {
-                await ConnectInternalAsync(_reconnectCts.Token);
+                await ConnectInternalAsync(_reconnectCts.Token, isReconnecting: true);
+                Logger.Log(LoggingLevel.Information, "重连成功");
                 return;
             }
             catch
             {
-                if (_options.MaxReconnectAttempts > 0 && attempts >= _options.MaxReconnectAttempts)
+                CleanupConnection(); // 确保清理失败的连接
+                
+                if (maxAttempts > 0 && attempts >= maxAttempts)
                 {
+                    Logger.Log(LoggingLevel.Warning, $"重连失败，已达到最大重连次数 {maxAttempts}");
+                    OnReconnectFailed(); // 通知重连失败
                     State = ModbusConnectionState.Disconnected;
+                    _reconnectCts = null;
                     return;
                 }
-                try { await Task.Delay(_options.ReconnectInterval, _reconnectCts.Token); }
-                catch (OperationCanceledException) { break; }
+                
+                try 
+                { 
+                    await Task.Delay(_options.ReconnectInterval, _reconnectCts.Token); 
+                }
+                catch (OperationCanceledException) 
+                { 
+                    Logger.Log(LoggingLevel.Information, "重连已取消");
+                    break; 
+                }
             }
         }
+        
         State = ModbusConnectionState.Disconnected;
+        _reconnectCts = null;
     }
 
     protected override void Dispose(bool disposing)

@@ -23,9 +23,14 @@ public interface IModbusMasterClient : IModbusMaster, IModbusClient
     void StopReconnect();
     
     /// <summary>
-    /// 重连事件
+    /// 重连事件，参数为（当前重连次数，最大重连次数）
     /// </summary>
-    event Action<int>? Reconnecting;
+    event Action<int, int>? Reconnecting;
+    
+    /// <summary>
+    /// 重连失败事件（达到最大重连次数后触发）
+    /// </summary>
+    event Action? ReconnectFailed;
     
     /// <summary>
     /// 心跳事件

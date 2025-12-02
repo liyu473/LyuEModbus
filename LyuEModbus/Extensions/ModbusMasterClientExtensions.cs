@@ -61,11 +61,24 @@ public static class ModbusMasterClientExtensions
     /// <summary>
     /// 订阅重连事件并启用自动重连
     /// </summary>
-    public static IModbusMasterClient OnReconnecting(this IModbusMasterClient master, Action<int> handler, int intervalMs = 5000, int maxAttempts = 0)
+    /// <param name="master">主站实例</param>
+    /// <param name="handler">重连回调，参数为（当前次数，最大次数）</param>
+    /// <param name="intervalMs">重连间隔（毫秒）</param>
+    /// <param name="maxAttempts">最大重连次数，0表示无限重连</param>
+    public static IModbusMasterClient OnReconnecting(this IModbusMasterClient master, Action<int, int> handler, int intervalMs = 5000, int maxAttempts = 0)
     {
         if (master is ModbusTcpMaster tcpMaster)
             tcpMaster.ConfigureReconnect(true, intervalMs, maxAttempts);
         master.Reconnecting += handler;
+        return master;
+    }
+    
+    /// <summary>
+    /// 订阅重连失败事件
+    /// </summary>
+    public static IModbusMasterClient OnReconnectFailed(this IModbusMasterClient master, Action handler)
+    {
+        master.ReconnectFailed += handler;
         return master;
     }
 

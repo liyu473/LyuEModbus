@@ -33,6 +33,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
     [ObservableProperty] public partial bool CoilWriteValue { get; set; } = false;
     [ObservableProperty] public partial bool AutoReconnect { get; set; } = true;
     [ObservableProperty] public partial int ReconnectAttempt { get; set; }
+    [ObservableProperty] public partial int MaxReconnectAttempts { get; set; } = 10;
     [ObservableProperty] public partial bool IsMasterConnected { get; set; }
     [ObservableProperty] public partial bool IsReconnecting { get; set; }
 
@@ -61,7 +62,7 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                     MasterStatus = state switch
                     {
                         ModbusConnectionState.Connected => $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
-                        ModbusConnectionState.Reconnecting => $"重连中... ({ReconnectAttempt}/10)",
+                        ModbusConnectionState.Reconnecting => $"重连中... ({ReconnectAttempt}/{MaxReconnectAttempts})",
                         ModbusConnectionState.Connecting => "连接中...",
                         _ => "未连接"
                     };
@@ -71,16 +72,20 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                         ReconnectAttempt = 0;
                         toastManager.ShowToast("连接成功", type: Notification.Success);
                     }
-                    else if (state == ModbusConnectionState.Disconnected && !IsReconnecting)
-                    {
-                        toastManager.ShowToast("连接已断开", type: Notification.Warning);
-                    }
                 })
-                .OnReconnecting(attempt =>
+                .OnReconnecting((attempt, max) =>
                 {
                     ReconnectAttempt = attempt;
-                    MasterStatus = $"重连中... ({attempt}/10)";
-                }, intervalMs: 3000, maxAttempts: 10)
+                    MaxReconnectAttempts = max;
+                    var maxDisplay = max == 0 ? "∞" : max.ToString();
+                    MasterStatus = $"重连中... ({attempt}/{maxDisplay})";
+                }, intervalMs: 3000, maxAttempts: MaxReconnectAttempts)
+                .OnReconnectFailed(() =>
+                {
+                    toastManager.ShowToast($"重连失败，已达到最大次数 {MaxReconnectAttempts}", type: Notification.Error);
+                    ReconnectAttempt = 0;
+                    IsReconnecting = false;
+                })
                 .OnHeartbeat(() => { }, intervalMs: 3000);
 
             await _tcpMaster.ConnectAsync();

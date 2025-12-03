@@ -12,7 +12,7 @@ public class ModbusSlaveOptions
     public ushort? InitCoilCount { get; set; }
     /// <summary>
     /// 数据变化检测间隔（毫秒），用于触发 HoldingRegisterWritten/CoilWritten 事件
-    /// <para>默认值: 100ms，值越小响应越快但 CPU 占用越高</para>
+    /// <para>默认值: 100ms</para>
     /// </summary>
     public int ChangeDetectionInterval { get; set; } = 100;
 }

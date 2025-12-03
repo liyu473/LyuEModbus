@@ -18,6 +18,16 @@ public class EModbusFactory : IEModbusFactory, IDisposable
     private readonly ConcurrentDictionary<string, IModbusSlaveClient> _slaves = new();
     private bool _disposed;
 
+    /// <summary>
+    /// 默认主站配置（创建主站时自动应用）
+    /// </summary>
+    public ModbusMasterOptions DefaultMasterOptions { get; } = new();
+
+    /// <summary>
+    /// 默认从站配置（创建从站时自动应用）
+    /// </summary>
+    public ModbusSlaveOptions DefaultSlaveOptions { get; } = new();
+
     public EModbusFactory(ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
@@ -25,6 +35,24 @@ public class EModbusFactory : IEModbusFactory, IDisposable
     }
 
     public EModbusFactory() : this(NullLoggerFactory.Instance) { }
+
+    /// <summary>
+    /// 配置默认主站选项
+    /// </summary>
+    public EModbusFactory ConfigureDefaultMaster(Action<ModbusMasterOptions> configure)
+    {
+        configure(DefaultMasterOptions);
+        return this;
+    }
+
+    /// <summary>
+    /// 配置默认从站选项
+    /// </summary>
+    public EModbusFactory ConfigureDefaultSlave(Action<ModbusSlaveOptions> configure)
+    {
+        configure(DefaultSlaveOptions);
+        return this;
+    }
 
     #region 工厂实现
 
@@ -36,7 +64,8 @@ public class EModbusFactory : IEModbusFactory, IDisposable
             throw new InvalidOperationException($"名为 '{name}' 的主站已存在");
 
         var logger = _loggerFactory.CreateLogger($"Master:{name}");
-        var master = new ModbusTcpMaster(name, options ?? new ModbusMasterOptions(), logger);
+        var mergedOptions = MergeOptions(DefaultMasterOptions, options);
+        var master = new ModbusTcpMaster(name, mergedOptions, logger);
 
         if (!_masters.TryAdd(name, master))
         {
@@ -54,7 +83,8 @@ public class EModbusFactory : IEModbusFactory, IDisposable
             throw new InvalidOperationException($"名为 '{name}' 的从站已存在");
 
         var logger = _loggerFactory.CreateLogger($"Slave:{name}");
-        var slave = new ModbusTcpSlave(name, options ?? new ModbusSlaveOptions(), logger);
+        var mergedOptions = MergeOptions(DefaultSlaveOptions, options);
+        var slave = new ModbusTcpSlave(name, mergedOptions, logger);
 
         if (!_slaves.TryAdd(name, slave))
         {
@@ -62,6 +92,75 @@ public class EModbusFactory : IEModbusFactory, IDisposable
             throw new InvalidOperationException($"名为 '{name}' 的从站已存在");
         }
         return slave;
+    }
+
+    /// <summary>
+    /// 合并配置（传入的 options 覆盖默认配置中的非空值）
+    /// </summary>
+    private static ModbusMasterOptions MergeOptions(ModbusMasterOptions defaults, ModbusMasterOptions? overrides)
+    {
+        if (overrides == null) return CloneOptions(defaults);
+
+        return new ModbusMasterOptions
+        {
+            IpAddress = overrides.IpAddress ?? defaults.IpAddress,
+            Port = overrides.Port ?? defaults.Port,
+            SlaveId = overrides.SlaveId ?? defaults.SlaveId,
+            ReadTimeout = overrides.ReadTimeout ?? defaults.ReadTimeout,
+            WriteTimeout = overrides.WriteTimeout ?? defaults.WriteTimeout,
+            AutoReconnect = overrides.AutoReconnect || defaults.AutoReconnect,
+            ReconnectInterval = overrides.ReconnectInterval > 0 ? overrides.ReconnectInterval : defaults.ReconnectInterval,
+            MaxReconnectAttempts = overrides.MaxReconnectAttempts > 0 ? overrides.MaxReconnectAttempts : defaults.MaxReconnectAttempts,
+            EnableHeartbeat = overrides.EnableHeartbeat || defaults.EnableHeartbeat,
+            HeartbeatInterval = overrides.HeartbeatInterval > 0 ? overrides.HeartbeatInterval : defaults.HeartbeatInterval,
+            ByteOrder = overrides.ByteOrder != ByteOrder.ABCD ? overrides.ByteOrder : defaults.ByteOrder
+        };
+    }
+
+    private static ModbusMasterOptions CloneOptions(ModbusMasterOptions source)
+    {
+        return new ModbusMasterOptions
+        {
+            IpAddress = source.IpAddress,
+            Port = source.Port,
+            SlaveId = source.SlaveId,
+            ReadTimeout = source.ReadTimeout,
+            WriteTimeout = source.WriteTimeout,
+            AutoReconnect = source.AutoReconnect,
+            ReconnectInterval = source.ReconnectInterval,
+            MaxReconnectAttempts = source.MaxReconnectAttempts,
+            EnableHeartbeat = source.EnableHeartbeat,
+            HeartbeatInterval = source.HeartbeatInterval,
+            ByteOrder = source.ByteOrder
+        };
+    }
+
+    private static ModbusSlaveOptions MergeOptions(ModbusSlaveOptions defaults, ModbusSlaveOptions? overrides)
+    {
+        if (overrides == null) return CloneOptions(defaults);
+
+        return new ModbusSlaveOptions
+        {
+            IpAddress = overrides.IpAddress ?? defaults.IpAddress,
+            Port = overrides.Port ?? defaults.Port,
+            SlaveId = overrides.SlaveId ?? defaults.SlaveId,
+            InitHoldingRegisterCount = overrides.InitHoldingRegisterCount ?? defaults.InitHoldingRegisterCount,
+            InitCoilCount = overrides.InitCoilCount ?? defaults.InitCoilCount,
+            ChangeDetectionInterval = overrides.ChangeDetectionInterval > 0 ? overrides.ChangeDetectionInterval : defaults.ChangeDetectionInterval
+        };
+    }
+
+    private static ModbusSlaveOptions CloneOptions(ModbusSlaveOptions source)
+    {
+        return new ModbusSlaveOptions
+        {
+            IpAddress = source.IpAddress,
+            Port = source.Port,
+            SlaveId = source.SlaveId,
+            InitHoldingRegisterCount = source.InitHoldingRegisterCount,
+            InitCoilCount = source.InitCoilCount,
+            ChangeDetectionInterval = source.ChangeDetectionInterval
+        };
     }
 
     public IModbusMasterClient? GetMaster(string name)

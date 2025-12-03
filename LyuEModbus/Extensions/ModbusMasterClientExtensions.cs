@@ -30,6 +30,18 @@ public static class ModbusMasterClientExtensions
     }
 
     /// <summary>
+    /// 配置默认字节序（用于 Float、Int32、Double 等多寄存器数据类型）
+    /// </summary>
+    /// <param name="master">主站实例</param>
+    /// <param name="byteOrder">字节序</param>
+    public static IModbusMasterClient WithByteOrder(this IModbusMasterClient master, ByteOrder byteOrder)
+    {
+        if (master is ModbusTcpMaster tcpMaster)
+            tcpMaster.ConfigureByteOrder(byteOrder);
+        return master;
+    }
+
+    /// <summary>
     /// 配置超时时间
     /// </summary>
     public static IModbusMasterClient WithTimeout(this IModbusMasterClient master, int timeoutMs)

@@ -26,7 +26,12 @@ public interface IModbusClient : IDisposable
     /// 从站ID
     /// </summary>
     byte SlaveId { get; }
-    
+
+    /// <summary>
+    /// 默认字节序（用于 Float、Int32、Double 等多寄存器数据类型）
+    /// </summary>
+    ByteOrder ByteOrder { get; }
+
     /// <summary>
     /// 连接状态
     /// </summary>

@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,9 +6,10 @@ using EModbus.Model;
 using Extensions;
 using LyuEModbus.Abstractions;
 using LyuEModbus.Extensions;
-using LyuEModbus.Factory;
 using LyuEModbus.Models;
 using ShadUI;
+using System;
+using System.Threading.Tasks;
 
 namespace EModbus.ViewModels;
 
@@ -150,7 +149,7 @@ public partial class MasterViewModel(
                     });
                     return Task.CompletedTask;
                 })
-                .WithHeartbeat(3000)
+                .WithHeartbeat(3000) //心跳检测无回调事件，用于保持连接活跃，一旦断开触发状态响应
                 .WithHoldingRegisterPolling(
                     0,
                     1,

@@ -64,7 +64,12 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
     /// 目标从站ID
     /// </summary>
     public byte SlaveId { get; protected set; }
-    
+
+    /// <summary>
+    /// 默认字节序（用于 Float、Int32、Double 等多寄存器数据类型）
+    /// </summary>
+    public ByteOrder ByteOrder { get; set; } = ByteOrder.ABCD;
+
     /// <summary>
     /// 当前连接状态
     /// <para>设置时会自动记录日志并触发 <see cref="StateChanged"/> 事件</para>

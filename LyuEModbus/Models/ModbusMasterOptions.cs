@@ -15,4 +15,9 @@ public class ModbusMasterOptions
     public int MaxReconnectAttempts { get; set; }
     public bool EnableHeartbeat { get; set; }
     public int HeartbeatInterval { get; set; }
+
+    /// <summary>
+    /// 默认字节序（用于 Float、Int32、Double 等多寄存器数据类型）
+    /// </summary>
+    public ByteOrder ByteOrder { get; set; } = ByteOrder.ABCD;
 }

@@ -6,12 +6,14 @@ namespace LyuEModbus.Extensions;
 /// <summary>
 /// IModbusMasterClient 读写扩展方法
 /// </summary>
-public static partial class ModbusMasterExtensions
+public static class ModbusMasterExtensions
 {
     /// <summary>
     /// 默认重试间隔（毫秒）
     /// </summary>
     private const int DefaultRetryDelayMs = 100;
+
+    #region 内部重试策略实现
 
     /// <summary>
     /// 带重试的执行方法
@@ -119,6 +121,8 @@ public static partial class ModbusMasterExtensions
             }
         }
     }
+
+    #endregion
 
     #region 线圈读取
 
@@ -252,43 +256,6 @@ public static partial class ModbusMasterExtensions
         d => string.Join(", ", d.Select(kv => $"{kv.Key}={kv.Value}")));
     }
 
-    /// <summary>
-    /// 读取 Int32 值（占用2个寄存器）
-    /// </summary>
-    public static Task<int?> ReadInt32Async(
-        this IModbusMasterClient master,
-        ushort startAddress,
-        bool bigEndian = true,
-        Func<Exception, Task>? onError = null,
-        int retryCount = 0)
-    {
-        return ExecuteWithRetryAsync(master, async () =>
-        {
-            var result = await master.ReadHoldingRegistersAsync(master.SlaveId, startAddress, 2);
-            return bigEndian ? (result[0] << 16) | result[1] : (result[1] << 16) | result[0];
-        }, retryCount, onError, $"ReadInt32({startAddress})");
-    }
-
-    /// <summary>
-    /// 读取 Float 值（占用2个寄存器）
-    /// </summary>
-    public static Task<float?> ReadFloatAsync(
-        this IModbusMasterClient master,
-        ushort startAddress,
-        bool bigEndian = true,
-        Func<Exception, Task>? onError = null,
-        int retryCount = 0)
-    {
-        return ExecuteWithRetryAsync(master, async () =>
-        {
-            var result = await master.ReadHoldingRegistersAsync(master.SlaveId, startAddress, 2);
-            byte[] bytes = bigEndian
-                ? [(byte)(result[1] & 0xFF), (byte)(result[1] >> 8), (byte)(result[0] & 0xFF), (byte)(result[0] >> 8)]
-                : [(byte)(result[0] & 0xFF), (byte)(result[0] >> 8), (byte)(result[1] & 0xFF), (byte)(result[1] >> 8)];
-            return BitConverter.ToSingle(bytes, 0);
-        }, retryCount, onError, $"ReadFloat({startAddress})");
-    }
-
     #endregion
 
     #region 保持寄存器写入
@@ -321,47 +288,6 @@ public static partial class ModbusMasterExtensions
         return ExecuteWithRetryBoolAsync(master,
             () => master.WriteMultipleRegistersAsync(master.SlaveId, startAddress, values),
             retryCount, onError, $"WriteRegisters({startAddress}, {values.Length})");
-    }
-
-    /// <summary>
-    /// 写入 Int32 值（占用2个寄存器）
-    /// </summary>
-    public static Task<bool> WriteInt32Async(
-        this IModbusMasterClient master,
-        ushort startAddress,
-        int value,
-        bool bigEndian = true,
-        Func<Exception, Task>? onError = null,
-        int retryCount = 0)
-    {
-        return ExecuteWithRetryBoolAsync(master, async () =>
-        {
-            ushort high = (ushort)(value >> 16);
-            ushort low = (ushort)(value & 0xFFFF);
-            await master.WriteMultipleRegistersAsync(master.SlaveId, startAddress,
-                bigEndian ? [high, low] : [low, high]);
-        }, retryCount, onError, $"WriteInt32({startAddress}, {value})");
-    }
-
-    /// <summary>
-    /// 写入 Float 值（占用2个寄存器）
-    /// </summary>
-    public static Task<bool> WriteFloatAsync(
-        this IModbusMasterClient master,
-        ushort startAddress,
-        float value,
-        bool bigEndian = true,
-        Func<Exception, Task>? onError = null,
-        int retryCount = 0)
-    {
-        return ExecuteWithRetryBoolAsync(master, async () =>
-        {
-            var bytes = BitConverter.GetBytes(value);
-            ushort low = (ushort)(bytes[0] | (bytes[1] << 8));
-            ushort high = (ushort)(bytes[2] | (bytes[3] << 8));
-            await master.WriteMultipleRegistersAsync(master.SlaveId, startAddress,
-                bigEndian ? [high, low] : [low, high]);
-        }, retryCount, onError, $"WriteFloat({startAddress}, {value})");
     }
 
     /// <summary>

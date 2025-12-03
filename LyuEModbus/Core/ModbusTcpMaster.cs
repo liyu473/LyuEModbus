@@ -24,6 +24,13 @@ internal class ModbusTcpMaster : ModbusMasterBase
         _options = options;
         if (options.SlaveId.HasValue)
             SlaveId = options.SlaveId.Value;
+        ByteOrder = options.ByteOrder;
+    }
+
+    internal void ConfigureByteOrder(ByteOrder byteOrder)
+    {
+        _options.ByteOrder = byteOrder;
+        base.ByteOrder = byteOrder;
     }
 
     public override async Task ConnectAsync(CancellationToken cancellationToken = default)

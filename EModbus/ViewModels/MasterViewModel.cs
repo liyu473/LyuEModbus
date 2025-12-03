@@ -14,28 +14,70 @@ using ShadUI;
 
 namespace EModbus.ViewModels;
 
-public partial class MasterViewModel(ToastManager toastManager, ModbusSettings settings, IEModbusFactory factory) : ViewModelBase
+public partial class MasterViewModel(
+    ToastManager toastManager,
+    ModbusSettings settings,
+    IEModbusFactory factory
+) : ViewModelBase
 {
     private IModbusMasterClient? _tcpMaster;
 
-    [ObservableProperty] public partial MasterSettings MasterSettings { get; set; } = settings.Master;
-    [ObservableProperty] public partial string MasterStatus { get; set; } = "未连接";
-    [ObservableProperty] public partial string MasterLog { get; set; } = string.Empty;
-    [ObservableProperty] public partial ushort ReadAddress { get; set; } = 0;
-    [ObservableProperty] public partial ushort ReadCount { get; set; } = 10;
-    [ObservableProperty] public partial string ReadResult { get; set; } = string.Empty;
-    [ObservableProperty] public partial ushort WriteAddress { get; set; } = 0;
-    [ObservableProperty] public partial ushort WriteValue { get; set; } = 0;
-    [ObservableProperty] public partial ushort CoilReadAddress { get; set; } = 0;
-    [ObservableProperty] public partial ushort CoilReadCount { get; set; } = 10;
-    [ObservableProperty] public partial string CoilReadResult { get; set; } = string.Empty;
-    [ObservableProperty] public partial ushort CoilWriteAddress { get; set; } = 0;
-    [ObservableProperty] public partial bool CoilWriteValue { get; set; } = false;
-    [ObservableProperty] public partial bool AutoReconnect { get; set; } = true;
-    [ObservableProperty] public partial int ReconnectAttempt { get; set; }
-    [ObservableProperty] public partial int MaxReconnectAttempts { get; set; } = 10;
-    [ObservableProperty] public partial bool IsMasterConnected { get; set; }
-    [ObservableProperty] public partial bool IsReconnecting { get; set; }
+    [ObservableProperty]
+    public partial MasterSettings MasterSettings { get; set; } = settings.Master;
+
+    [ObservableProperty]
+    public partial string MasterStatus { get; set; } = "未连接";
+
+    [ObservableProperty]
+    public partial string MasterLog { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial ushort ReadAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial ushort ReadCount { get; set; } = 10;
+
+    [ObservableProperty]
+    public partial string ReadResult { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial ushort WriteAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial ushort WriteValue { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial ushort CoilReadAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial ushort CoilReadCount { get; set; } = 10;
+
+    [ObservableProperty]
+    public partial string CoilReadResult { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial ushort CoilWriteAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial bool CoilWriteValue { get; set; } = false;
+
+    [ObservableProperty]
+    public partial bool AutoReconnect { get; set; } = true;
+
+    [ObservableProperty]
+    public partial int ReconnectAttempt { get; set; }
+
+    [ObservableProperty]
+    public partial int MaxReconnectAttempts { get; set; } = 2;
+
+    [ObservableProperty]
+    public partial bool IsMasterConnected { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsReconnecting { get; set; }
+
+    [ObservableProperty]
+    public partial string PollyResult { get; set; }
 
     [RelayCommand]
     private async Task ConnectMasterAsync()
@@ -50,7 +92,8 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
         {
             factory.RemoveMaster("main");
 
-            _tcpMaster = factory.CreateTcpMaster("main")
+            _tcpMaster = factory
+                .CreateTcpMaster("main")
                 .WithEndpoint(MasterSettings.IpAddress, MasterSettings.Port)
                 .WithSlaveId(MasterSettings.SlaveId)
                 .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
@@ -63,10 +106,12 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
 
                         MasterStatus = state switch
                         {
-                            ModbusConnectionState.Connected => $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
-                            ModbusConnectionState.Reconnecting => $"重连中... ({ReconnectAttempt}/{MaxReconnectAttempts})",
+                            ModbusConnectionState.Connected =>
+                                $"已连接 - {MasterSettings.IpAddress}:{MasterSettings.Port}",
+                            ModbusConnectionState.Reconnecting =>
+                                $"重连中... ({ReconnectAttempt}/{MaxReconnectAttempts})",
                             ModbusConnectionState.Connecting => "连接中...",
-                            _ => "未连接"
+                            _ => "未连接",
                         };
 
                         if (state == ModbusConnectionState.Connected)
@@ -77,28 +122,48 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
                     });
                     return Task.CompletedTask;
                 })
-                .OnReconnecting((attempt, max) =>
-                {
-                    Dispatcher.UIThread.Post(() =>
+                .OnReconnecting(
+                    (attempt, max) =>
                     {
-                        ReconnectAttempt = attempt;
-                        MaxReconnectAttempts = max;
-                        var maxDisplay = max == 0 ? "∞" : max.ToString();
-                        MasterStatus = $"重连中... ({attempt}/{maxDisplay})";
-                    });
-                    return Task.CompletedTask;
-                }, intervalMs: 3000, maxAttempts: MaxReconnectAttempts)
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            ReconnectAttempt = attempt;
+                            MaxReconnectAttempts = max;
+                            var maxDisplay = max == 0 ? "∞" : max.ToString();
+                            MasterStatus = $"重连中... ({attempt}/{maxDisplay})";
+                        });
+                        return Task.CompletedTask;
+                    },
+                    intervalMs: 3000,
+                    maxAttempts: MaxReconnectAttempts
+                )
                 .OnReconnectFailed(() =>
                 {
                     Dispatcher.UIThread.Post(() =>
                     {
-                        toastManager.ShowToast($"重连失败，已达到最大次数 {MaxReconnectAttempts}", type: Notification.Error);
+                        toastManager.ShowToast(
+                            $"重连失败，已达到最大次数 {MaxReconnectAttempts}",
+                            type: Notification.Error
+                        );
                         ReconnectAttempt = 0;
                         IsReconnecting = false;
                     });
                     return Task.CompletedTask;
                 })
-                .WithHeartbeat(3000);
+                .WithHeartbeat(3000)
+                .WithHoldingRegisterPolling(
+                    0,
+                    1,
+                    200,
+                    (dic) =>
+                    {
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            PollyResult = $"{dic[0]}";
+                        });
+                        return Task.CompletedTask;
+                    }
+                );
 
             await _tcpMaster.ConnectAsync();
         }
@@ -161,9 +226,16 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
             return;
         }
 
-        var dict = await _tcpMaster.ReadHoldingRegistersToDictAsync(ReadAddress, ReadCount,
-            ex => { toastManager.ShowToast($"读取失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
-        
+        var dict = await _tcpMaster.ReadHoldingRegistersToDictAsync(
+            ReadAddress,
+            ReadCount,
+            ex =>
+            {
+                toastManager.ShowToast($"读取失败: {ex.Message}", type: Notification.Error);
+                return Task.CompletedTask;
+            }
+        );
+
         if (dict != null)
         {
             ReadResult = string.Join(", ", dict.Values);
@@ -180,9 +252,16 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
             return;
         }
 
-        var success = await _tcpMaster.WriteRegisterAsync(WriteAddress, WriteValue,
-            ex => { toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
-        
+        var success = await _tcpMaster.WriteRegisterAsync(
+            WriteAddress,
+            WriteValue,
+            ex =>
+            {
+                toastManager.ShowToast($"写入失败: {ex.Message}", type: Notification.Error);
+                return Task.CompletedTask;
+            }
+        );
+
         if (success)
             toastManager.ShowToast("写入成功", type: Notification.Success);
     }
@@ -196,9 +275,16 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
             return;
         }
 
-        var dict = await _tcpMaster.ReadCoilsToDictAsync(CoilReadAddress, CoilReadCount,
-            ex => { toastManager.ShowToast($"读取线圈失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
-        
+        var dict = await _tcpMaster.ReadCoilsToDictAsync(
+            CoilReadAddress,
+            CoilReadCount,
+            ex =>
+            {
+                toastManager.ShowToast($"读取线圈失败: {ex.Message}", type: Notification.Error);
+                return Task.CompletedTask;
+            }
+        );
+
         if (dict != null)
         {
             CoilReadResult = string.Join(", ", dict.Values);
@@ -215,9 +301,16 @@ public partial class MasterViewModel(ToastManager toastManager, ModbusSettings s
             return;
         }
 
-        var success = await _tcpMaster.WriteCoilAsync(CoilWriteAddress, CoilWriteValue,
-            ex => { toastManager.ShowToast($"写入线圈失败: {ex.Message}", type: Notification.Error); return Task.CompletedTask; });
-        
+        var success = await _tcpMaster.WriteCoilAsync(
+            CoilWriteAddress,
+            CoilWriteValue,
+            ex =>
+            {
+                toastManager.ShowToast($"写入线圈失败: {ex.Message}", type: Notification.Error);
+                return Task.CompletedTask;
+            }
+        );
+
         if (success)
             toastManager.ShowToast($"写入线圈成功: {CoilWriteValue}", type: Notification.Success);
     }

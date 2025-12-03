@@ -70,6 +70,11 @@
             </shadui:Card.Header>
             <shadui:Card.Content>
                 <StackPanel Spacing="16">
+                    <StackPanel Spacing="20" Orientation="Horizontal">
+						<TextBlock Margin="0,0,8,0">轮询寄存器 0 结果：</TextBlock>
+						<TextBlock Text="{Binding PollyResult}"/>
+                    </StackPanel>
+
                     <!-- 读取 -->
                     <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />

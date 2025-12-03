@@ -9,7 +9,7 @@ using System.Collections.Concurrent;
 namespace LyuEModbus.Factory;
 
 /// <summary>
-/// Modbus 工厂实现（仅支持DI）
+/// Modbus 工厂实现
 /// </summary>
 public class EModbusFactory : IEModbusFactory, IDisposable
 {

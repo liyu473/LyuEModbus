@@ -53,6 +53,7 @@ public static partial class ModbusDataTypeExtensions
         }, retryCount, onError, $"ReadDoubles({address}, {count})");
     }
 
+
     /// <summary>
     /// 写入 Double
     /// </summary>

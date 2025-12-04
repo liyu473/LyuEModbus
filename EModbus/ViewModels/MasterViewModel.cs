@@ -148,7 +148,7 @@ public partial class MasterViewModel(
             _tcpMaster = factory
                 .CreateTcpMaster("main")
                 .WithEndpoint(MasterSettings.IpAddress, MasterSettings.Port)
-                .WithSlaveId(MasterSettings.SlaveId)    
+                .WithSlaveId(MasterSettings.SlaveId)
                 .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
                 .OnStateChanged(state =>
                 {

@@ -34,6 +34,19 @@ public static class ModbusServiceExtensions
             var loggerFactory = sp.GetService<ILoggerFactory>();
             var factory = new EModbusFactory(loggerFactory!);
 
+            // 应用默认主站配置
+            if (options.DefaultMasterConfigure != null)
+            {
+                factory.ConfigureDefaultMaster(options.DefaultMasterConfigure);
+            }
+
+            // 应用默认从站配置
+            if (options.DefaultSlaveConfigure != null)
+            {
+                factory.ConfigureDefaultSlave(options.DefaultSlaveConfigure);
+            }
+
+            // 创建预配置的主站
             foreach (var (name, masterConfigure) in options.MasterConfigurations)
             {
                 var masterOptions = new Models.ModbusMasterOptions();
@@ -41,6 +54,7 @@ public static class ModbusServiceExtensions
                 factory.CreateTcpMaster(name, masterOptions);
             }
 
+            // 创建预配置的从站
             foreach (var (name, slaveConfigure) in options.SlaveConfigurations)
             {
                 var slaveOptions = new Models.ModbusSlaveOptions();

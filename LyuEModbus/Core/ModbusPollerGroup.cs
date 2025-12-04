@@ -1,4 +1,5 @@
 using LyuEModbus.Abstractions;
+using LyuEModbus.Extensions;
 using LyuEModbus.Models;
 using System.Collections.Concurrent;
 
@@ -196,6 +197,351 @@ public class ModbusPollerGroup : IDisposable
             Name = name,
             IntervalMs = intervalMs,
             Action = async ct => await action(_master)
+        };
+        return this;
+    }
+
+    #endregion
+
+    #region 数据类型扩展轮询任务
+
+    /// <summary>
+    /// 添加 Float 轮询任务（32位，2个寄存器）
+    /// </summary>
+    public ModbusPollerGroup AddFloat(
+        string name,
+        ushort address,
+        int intervalMs,
+        Func<float, Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadFloatAsync(address, byteOrder);
+                if (result.HasValue)
+                    await onData(result.Value);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加多个 Float 轮询任务
+    /// </summary>
+    public ModbusPollerGroup AddFloats(
+        string name,
+        ushort startAddress,
+        int count,
+        int intervalMs,
+        Func<float[], Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadFloatsAsync(startAddress, count, byteOrder);
+                if (result != null)
+                    await onData(result);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加 Double 轮询任务（64位，4个寄存器）
+    /// </summary>
+    public ModbusPollerGroup AddDouble(
+        string name,
+        ushort address,
+        int intervalMs,
+        Func<double, Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadDoubleAsync(address, byteOrder);
+                if (result.HasValue)
+                    await onData(result.Value);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加多个 Double 轮询任务
+    /// </summary>
+    public ModbusPollerGroup AddDoubles(
+        string name,
+        ushort startAddress,
+        int count,
+        int intervalMs,
+        Func<double[], Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadDoublesAsync(startAddress, count, byteOrder);
+                if (result != null)
+                    await onData(result);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加 Int32 轮询任务（32位，2个寄存器）
+    /// </summary>
+    public ModbusPollerGroup AddInt32(
+        string name,
+        ushort address,
+        int intervalMs,
+        Func<int, Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadInt32Async(address, byteOrder);
+                if (result.HasValue)
+                    await onData(result.Value);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加多个 Int32 轮询任务
+    /// </summary>
+    public ModbusPollerGroup AddInt32s(
+        string name,
+        ushort startAddress,
+        int count,
+        int intervalMs,
+        Func<int[], Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadInt32sAsync(startAddress, count, byteOrder);
+                if (result != null)
+                    await onData(result);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加 UInt32 轮询任务（32位，2个寄存器）
+    /// </summary>
+    public ModbusPollerGroup AddUInt32(
+        string name,
+        ushort address,
+        int intervalMs,
+        Func<uint, Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadUInt32Async(address, byteOrder);
+                if (result.HasValue)
+                    await onData(result.Value);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加多个 UInt32 轮询任务
+    /// </summary>
+    public ModbusPollerGroup AddUInt32s(
+        string name,
+        ushort startAddress,
+        int count,
+        int intervalMs,
+        Func<uint[], Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadUInt32sAsync(startAddress, count, byteOrder);
+                if (result != null)
+                    await onData(result);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加 Int64 轮询任务（64位，4个寄存器）
+    /// </summary>
+    public ModbusPollerGroup AddInt64(
+        string name,
+        ushort address,
+        int intervalMs,
+        Func<long, Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadInt64Async(address, byteOrder);
+                if (result.HasValue)
+                    await onData(result.Value);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加多个 Int64 轮询任务
+    /// </summary>
+    public ModbusPollerGroup AddInt64s(
+        string name,
+        ushort startAddress,
+        int count,
+        int intervalMs,
+        Func<long[], Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadInt64sAsync(startAddress, count, byteOrder);
+                if (result != null)
+                    await onData(result);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加 UInt64 轮询任务（64位，4个寄存器）
+    /// </summary>
+    public ModbusPollerGroup AddUInt64(
+        string name,
+        ushort address,
+        int intervalMs,
+        Func<ulong, Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadUInt64Async(address, byteOrder);
+                if (result.HasValue)
+                    await onData(result.Value);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加多个 UInt64 轮询任务
+    /// </summary>
+    public ModbusPollerGroup AddUInt64s(
+        string name,
+        ushort startAddress,
+        int count,
+        int intervalMs,
+        Func<ulong[], Task> onData,
+        ByteOrder? byteOrder = null)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadUInt64sAsync(startAddress, count, byteOrder);
+                if (result != null)
+                    await onData(result);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加 Boolean 轮询任务（保持寄存器，1个寄存器）
+    /// </summary>
+    public ModbusPollerGroup AddBoolean(
+        string name,
+        ushort address,
+        int intervalMs,
+        Func<bool, Task> onData)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadBooleanAsync(address);
+                if (result.HasValue)
+                    await onData(result.Value);
+            }
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// 添加多个 Boolean 轮询任务（保持寄存器）
+    /// </summary>
+    public ModbusPollerGroup AddBooleans(
+        string name,
+        ushort startAddress,
+        int count,
+        int intervalMs,
+        Func<bool[], Task> onData)
+    {
+        _tasks[name] = new PollTask
+        {
+            Name = name,
+            IntervalMs = intervalMs,
+            Action = async ct =>
+            {
+                var result = await _master.ReadBooleansAsync(startAddress, count);
+                if (result != null)
+                    await onData(result);
+            }
         };
         return this;
     }

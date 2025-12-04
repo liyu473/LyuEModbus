@@ -1,3 +1,6 @@
+using System;
+using System.Globalization;
+using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,8 +11,6 @@ using LyuEModbus.Abstractions;
 using LyuEModbus.Extensions;
 using LyuEModbus.Models;
 using ShadUI;
-using System;
-using System.Threading.Tasks;
 
 namespace EModbus.ViewModels;
 
@@ -30,6 +31,8 @@ public partial class MasterViewModel(
     [ObservableProperty]
     public partial string MasterLog { get; set; } = string.Empty;
 
+    #region UShort - 保持寄存器
+
     [ObservableProperty]
     public partial ushort ReadAddress { get; set; } = 0;
 
@@ -45,6 +48,10 @@ public partial class MasterViewModel(
     [ObservableProperty]
     public partial ushort WriteValue { get; set; } = 0;
 
+    #endregion
+
+    #region UShort - 线圈
+
     [ObservableProperty]
     public partial ushort CoilReadAddress { get; set; } = 0;
 
@@ -59,6 +66,48 @@ public partial class MasterViewModel(
 
     [ObservableProperty]
     public partial bool CoilWriteValue { get; set; } = false;
+
+    #endregion
+
+    #region Float
+
+    [ObservableProperty]
+    public partial ushort FloatReadAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial int FloatReadCount { get; set; } = 1;
+
+    [ObservableProperty]
+    public partial string FloatReadResult { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial ushort FloatWriteAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial string FloatWriteValue { get; set; } = "0.0";
+
+    #endregion
+
+    #region Boolean
+
+    [ObservableProperty]
+    public partial ushort BoolReadAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial int BoolReadCount { get; set; } = 1;
+
+    [ObservableProperty]
+    public partial string BoolReadResult { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial ushort BoolWriteAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial bool BoolWriteValue { get; set; } = false;
+
+    #endregion
+
+    #region 连接状态
 
     [ObservableProperty]
     public partial bool AutoReconnect { get; set; } = true;
@@ -76,7 +125,12 @@ public partial class MasterViewModel(
     public partial bool IsReconnecting { get; set; }
 
     [ObservableProperty]
-    public partial string PollyResult { get; set; }
+    public partial string PollyResult { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool PollyHeart { get; set; }
+
+    #endregion
 
     [RelayCommand]
     private async Task ConnectMasterAsync()
@@ -94,7 +148,7 @@ public partial class MasterViewModel(
             _tcpMaster = factory
                 .CreateTcpMaster("main")
                 .WithEndpoint(MasterSettings.IpAddress, MasterSettings.Port)
-                .WithSlaveId(MasterSettings.SlaveId)
+                .WithSlaveId(MasterSettings.SlaveId)    
                 .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
                 .OnStateChanged(state =>
                 {
@@ -149,19 +203,12 @@ public partial class MasterViewModel(
                     });
                     return Task.CompletedTask;
                 })
-                .WithHeartbeat(3000) //心跳检测无回调事件，用于保持连接活跃，一旦断开触发状态响应
-                .WithHoldingRegisterPolling(
-                    0,
-                    1,
-                    200,
-                    (dic) =>
+                .OnHeartbeat(
+                    async () =>
                     {
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            PollyResult = $"{dic[0]}";
-                        });
-                        return Task.CompletedTask;
-                    }
+                        PollyHeart = await _tcpMaster!.ReadBooleanAsync(4000) ?? false;
+                    },
+                    200
                 );
 
             await _tcpMaster.ConnectAsync();
@@ -215,6 +262,8 @@ public partial class MasterViewModel(
         IsReconnecting = false;
         toastManager.ShowToast("已停止重连", type: Notification.Info);
     }
+
+    #region UShort Commands
 
     [RelayCommand]
     private async Task ReadHoldingRegistersAsync()
@@ -313,6 +362,182 @@ public partial class MasterViewModel(
         if (success)
             toastManager.ShowToast($"写入线圈成功: {CoilWriteValue}", type: Notification.Success);
     }
+
+    #endregion
+
+    #region Float Commands
+
+    [RelayCommand]
+    private async Task ReadFloatAsync()
+    {
+        if (!IsMasterConnected || _tcpMaster == null)
+        {
+            toastManager.ShowToast("请先连接主站", type: Notification.Warning);
+            return;
+        }
+
+        if (FloatReadCount == 1)
+        {
+            var result = await _tcpMaster.ReadFloatAsync(
+                FloatReadAddress,
+                onError: ex =>
+                {
+                    toastManager.ShowToast(
+                        $"读取Float失败: {ex.Message}",
+                        type: Notification.Error
+                    );
+                    return Task.CompletedTask;
+                }
+            );
+
+            if (result.HasValue)
+            {
+                FloatReadResult = result.Value.ToString(CultureInfo.InvariantCulture);
+                toastManager.ShowToast("读取Float成功", type: Notification.Success);
+            }
+        }
+        else
+        {
+            var results = await _tcpMaster.ReadFloatsAsync(
+                FloatReadAddress,
+                FloatReadCount,
+                onError: ex =>
+                {
+                    toastManager.ShowToast(
+                        $"读取Float失败: {ex.Message}",
+                        type: Notification.Error
+                    );
+                    return Task.CompletedTask;
+                }
+            );
+
+            if (results != null)
+            {
+                FloatReadResult = string.Join(", ", results);
+                toastManager.ShowToast("读取Float成功", type: Notification.Success);
+            }
+        }
+    }
+
+    [RelayCommand]
+    private async Task WriteFloatAsync()
+    {
+        if (!IsMasterConnected || _tcpMaster == null)
+        {
+            toastManager.ShowToast("请先连接主站", type: Notification.Warning);
+            return;
+        }
+
+        if (
+            !float.TryParse(
+                FloatWriteValue,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var value
+            )
+        )
+        {
+            toastManager.ShowToast("请输入有效的浮点数", type: Notification.Warning);
+            return;
+        }
+
+        var success = await _tcpMaster.WriteFloatAsync(
+            FloatWriteAddress,
+            value,
+            onError: ex =>
+            {
+                toastManager.ShowToast($"写入Float失败: {ex.Message}", type: Notification.Error);
+                return Task.CompletedTask;
+            }
+        );
+
+        if (success)
+            toastManager.ShowToast($"写入Float成功: {value}", type: Notification.Success);
+    }
+
+    #endregion
+
+    #region Boolean Commands
+
+    [RelayCommand]
+    private async Task ReadBooleanAsync()
+    {
+        if (!IsMasterConnected || _tcpMaster == null)
+        {
+            toastManager.ShowToast("请先连接主站", type: Notification.Warning);
+            return;
+        }
+
+        if (BoolReadCount == 1)
+        {
+            var result = await _tcpMaster.ReadBooleanAsync(
+                BoolReadAddress,
+                onError: ex =>
+                {
+                    toastManager.ShowToast(
+                        $"读取Boolean失败: {ex.Message}",
+                        type: Notification.Error
+                    );
+                    return Task.CompletedTask;
+                }
+            );
+
+            if (result.HasValue)
+            {
+                BoolReadResult = result.Value.ToString();
+                toastManager.ShowToast("读取Boolean成功", type: Notification.Success);
+            }
+        }
+        else
+        {
+            var results = await _tcpMaster.ReadBooleansAsync(
+                BoolReadAddress,
+                BoolReadCount,
+                onError: ex =>
+                {
+                    toastManager.ShowToast(
+                        $"读取Boolean失败: {ex.Message}",
+                        type: Notification.Error
+                    );
+                    return Task.CompletedTask;
+                }
+            );
+
+            if (results != null)
+            {
+                BoolReadResult = string.Join(", ", results);
+                toastManager.ShowToast("读取Boolean成功", type: Notification.Success);
+            }
+        }
+    }
+
+    [RelayCommand]
+    private async Task WriteBooleanAsync()
+    {
+        if (!IsMasterConnected || _tcpMaster == null)
+        {
+            toastManager.ShowToast("请先连接主站", type: Notification.Warning);
+            return;
+        }
+
+        var success = await _tcpMaster.WriteBooleanAsync(
+            BoolWriteAddress,
+            BoolWriteValue,
+            onError: ex =>
+            {
+                toastManager.ShowToast($"写入Boolean失败: {ex.Message}", type: Notification.Error);
+                return Task.CompletedTask;
+            }
+        );
+
+        if (success)
+            toastManager.ShowToast(
+                $"写入Boolean成功: {BoolWriteValue}",
+                type: Notification.Success
+            );
+    }
+
+    #endregion
 
     [RelayCommand]
     private void ClearMasterLog() => MasterLog = string.Empty;

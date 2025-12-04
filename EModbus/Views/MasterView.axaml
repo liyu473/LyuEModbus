@@ -6,7 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
     xmlns:vm="clr-namespace:EModbus.ViewModels"
-    d:DesignHeight="450"
+    d:DesignHeight="600"
     d:DesignWidth="800"
     x:DataType="vm:MasterViewModel"
     mc:Ignorable="d">
@@ -60,115 +60,200 @@
             </shadui:Card.Footer>
         </shadui:Card>
 
-        <!-- 保持寄存器读写卡片 -->
-        <shadui:Card>
-            <shadui:Card.Header>
-                <StackPanel Spacing="4">
-                    <TextBlock Classes="h3" Text="保持寄存器" />
-                    <TextBlock Classes="Muted" Text="读写保持寄存器 (功能码 03/06)" />
+        <!-- 数据类型测试 TabControl -->
+        <TabControl>
+            <!-- UShort Tab (保持寄存器 + 线圈) -->
+            <TabItem Header="UShort">
+                <StackPanel Spacing="16" Margin="0,16,0,0">
+                    <!-- 保持寄存器读写卡片 -->
+                    <shadui:Card>
+                        <shadui:Card.Header>
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="h3" Text="保持寄存器" />
+                                <TextBlock Classes="Muted" Text="读写保持寄存器 (功能码 03/06)" />
+                            </StackPanel>
+                        </shadui:Card.Header>
+                        <shadui:Card.Content>
+                            <StackPanel Spacing="16">
+                                <StackPanel Spacing="20" Orientation="Horizontal">
+                                    <TextBlock Margin="0,0,8,0">轮询寄存器 0 结果：</TextBlock>
+                                    <TextBlock Text="{Binding PollyResult}"/>
+                                </StackPanel>
+
+                                <!-- 读取 -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ReadAddress}" Watermark="0" />
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="数量" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding ReadCount}" Watermark="10" />
+                                    <Button Grid.Row="0" Grid.Column="4" Content="读取" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding ReadHoldingRegistersCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="结果" VerticalAlignment="Center" Margin="0,8,8,0" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
+                                             Text="{Binding ReadResult}" IsReadOnly="True" 
+                                             Watermark="读取结果显示在这里..." Margin="0,8,0,0" />
+                                </Grid>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" />
+
+                                <!-- 写入 -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto">
+                                    <TextBlock Grid.Column="0" Text="地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Column="1" Text="{Binding WriteAddress}" Watermark="0" />
+                                    <TextBlock Grid.Column="2" Text="值" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <TextBox Grid.Column="3" Text="{Binding WriteValue}" Watermark="0" />
+                                    <Button Grid.Column="4" Content="写入" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding WriteSingleRegisterCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                </Grid>
+                            </StackPanel>
+                        </shadui:Card.Content>
+                    </shadui:Card>
+
+                    <!-- 线圈读写卡片 -->
+                    <shadui:Card>
+                        <shadui:Card.Header>
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="h3" Text="线圈" />
+                                <TextBlock Classes="Muted" Text="读写线圈 (功能码 01/05)" />
+                            </StackPanel>
+                        </shadui:Card.Header>
+                        <shadui:Card.Content>
+                            <StackPanel Spacing="16">
+                                <!-- 读取线圈 -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding CoilReadAddress}" Watermark="0" />
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="数量" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding CoilReadCount}" Watermark="10" />
+                                    <Button Grid.Row="0" Grid.Column="4" Content="读取" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding ReadCoilsCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="结果" VerticalAlignment="Center" Margin="0,8,8,0" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
+                                             Text="{Binding CoilReadResult}" IsReadOnly="True" 
+                                             Watermark="读取结果显示在这里 (True/False)..." Margin="0,8,0,0" />
+                                </Grid>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" />
+
+                                <!-- 写入线圈 -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Column="1" Text="{Binding CoilWriteAddress}" Watermark="0" />
+                                    <TextBlock Grid.Column="2" Text="值" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <ToggleSwitch Grid.Column="3" IsChecked="{Binding CoilWriteValue}" 
+                                                  OnContent="ON" OffContent="OFF" />
+                                    <Button Grid.Column="4" Content="写入" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding WriteSingleCoilCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                </Grid>
+                            </StackPanel>
+                        </shadui:Card.Content>
+                    </shadui:Card>
                 </StackPanel>
-            </shadui:Card.Header>
-            <shadui:Card.Content>
-                <StackPanel Spacing="16">
-                    <StackPanel Spacing="20" Orientation="Horizontal">
-						<TextBlock Margin="0,0,8,0">轮询寄存器 0 结果：</TextBlock>
-						<TextBlock Text="{Binding PollyResult}"/>
-                    </StackPanel>
+            </TabItem>
 
-                    <!-- 读取 -->
-                    <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ReadAddress}" Watermark="0" />
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="数量" VerticalAlignment="Center" Margin="16,0,8,0" />
-                        <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding ReadCount}" Watermark="10" />
-                        <Button Grid.Row="0" Grid.Column="4" Content="读取" Classes="Primary" Margin="16,0,0,0"
-                                Command="{Binding ReadHoldingRegistersCommand}" 
-                                IsEnabled="{Binding IsMasterConnected}" />
-                        
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="结果" VerticalAlignment="Center" Margin="0,8,8,0" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
-                                 Text="{Binding ReadResult}" IsReadOnly="True" 
-                                 Watermark="读取结果显示在这里..." Margin="0,8,0,0" />
-                    </Grid>
+            <!-- Float Tab -->
+            <TabItem Header="Float">
+                <StackPanel Spacing="16" Margin="0,16,0,0">
+                    <shadui:Card>
+                        <shadui:Card.Header>
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="h3" Text="Float 读写" />
+                                <TextBlock Classes="Muted" Text="32位浮点数 (占用2个寄存器)" />
+                            </StackPanel>
+                        </shadui:Card.Header>
+                        <shadui:Card.Content>
+                            <StackPanel Spacing="16">
+                                <!-- 读取 Float -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FloatReadAddress}" Watermark="0" />
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="数量" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding FloatReadCount}" Watermark="1" />
+                                    <Button Grid.Row="0" Grid.Column="4" Content="读取" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding ReadFloatCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="结果" VerticalAlignment="Center" Margin="0,8,8,0" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
+                                             Text="{Binding FloatReadResult}" IsReadOnly="True" 
+                                             Watermark="读取结果显示在这里..." Margin="0,8,0,0" />
+                                </Grid>
 
-                    <Border Height="1" Background="{DynamicResource BorderBrush}" />
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" />
 
-                    <!-- 写入 -->
-                    <Grid ColumnDefinitions="Auto,*,Auto,*,Auto">
-                        <TextBlock Grid.Column="0" Text="地址" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBox Grid.Column="1" Text="{Binding WriteAddress}" Watermark="0" />
-                        <TextBlock Grid.Column="2" Text="值" VerticalAlignment="Center" Margin="16,0,8,0" />
-                        <TextBox Grid.Column="3" Text="{Binding WriteValue}" Watermark="0" />
-                        <Button Grid.Column="4" Content="写入" Classes="Primary" Margin="16,0,0,0"
-                                Command="{Binding WriteSingleRegisterCommand}" 
-                                IsEnabled="{Binding IsMasterConnected}" />
-                    </Grid>
+                                <!-- 写入 Float -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto">
+                                    <TextBlock Grid.Column="0" Text="地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Column="1" Text="{Binding FloatWriteAddress}" Watermark="0" />
+                                    <TextBlock Grid.Column="2" Text="值" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <TextBox Grid.Column="3" Text="{Binding FloatWriteValue}" Watermark="0.0" />
+                                    <Button Grid.Column="4" Content="写入" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding WriteFloatCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                </Grid>
+                            </StackPanel>
+                        </shadui:Card.Content>
+                    </shadui:Card>
                 </StackPanel>
-            </shadui:Card.Content>
-        </shadui:Card>
+            </TabItem>
 
-        <!-- 线圈读写卡片 -->
-        <shadui:Card>
-            <shadui:Card.Header>
-                <StackPanel Spacing="4">
-                    <TextBlock Classes="h3" Text="线圈" />
-                    <TextBlock Classes="Muted" Text="读写线圈 (功能码 01/05)" />
+            <!-- Boolean Tab -->
+            <TabItem Header="Boolean">
+                <StackPanel Spacing="16" Margin="0,16,0,0">
+                    <shadui:Card>
+                        <shadui:Card.Header>
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="h3" Text="Boolean 读写" />
+                                <TextBlock Classes="Muted" Text="布尔值 (保持寄存器，0=false, 非0=true)" />
+                            </StackPanel>
+                        </shadui:Card.Header>
+                        <shadui:Card.Content>
+                            <StackPanel Spacing="16">
+                                <StackPanel Spacing="20" Orientation="Horizontal">
+                                    <TextBlock Margin="0,0,8,0">轮询寄存器 4000 结果：</TextBlock>
+                                    <TextBlock Text="{Binding PollyHeart}"/>
+                                </StackPanel>
+
+                                <!-- 读取 Boolean -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BoolReadAddress}" Watermark="0" />
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="数量" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding BoolReadCount}" Watermark="1" />
+                                    <Button Grid.Row="0" Grid.Column="4" Content="读取" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding ReadBooleanCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="结果" VerticalAlignment="Center" Margin="0,8,8,0" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
+                                             Text="{Binding BoolReadResult}" IsReadOnly="True" 
+                                             Watermark="读取结果显示在这里 (True/False)..." Margin="0,8,0,0" />
+                                </Grid>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" />
+
+                                <!-- 写入 Boolean -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Column="1" Text="{Binding BoolWriteAddress}" Watermark="0" />
+                                    <TextBlock Grid.Column="2" Text="值" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <ToggleSwitch Grid.Column="3" IsChecked="{Binding BoolWriteValue}" 
+                                                  OnContent="True" OffContent="False" />
+                                    <Button Grid.Column="4" Content="写入" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding WriteBooleanCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                </Grid>
+                            </StackPanel>
+                        </shadui:Card.Content>
+                    </shadui:Card>
                 </StackPanel>
-            </shadui:Card.Header>
-            <shadui:Card.Content>
-                <StackPanel Spacing="16">
-                    <!-- 读取线圈 -->
-                    <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding CoilReadAddress}" Watermark="0" />
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="数量" VerticalAlignment="Center" Margin="16,0,8,0" />
-                        <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding CoilReadCount}" Watermark="10" />
-                        <Button Grid.Row="0" Grid.Column="4" Content="读取" Classes="Primary" Margin="16,0,0,0"
-                                Command="{Binding ReadCoilsCommand}" 
-                                IsEnabled="{Binding IsMasterConnected}" />
-                        
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="结果" VerticalAlignment="Center" Margin="0,8,8,0" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
-                                 Text="{Binding CoilReadResult}" IsReadOnly="True" 
-                                 Watermark="读取结果显示在这里 (True/False)..." Margin="0,8,0,0" />
-                    </Grid>
-
-                    <Border Height="1" Background="{DynamicResource BorderBrush}" />
-
-                    <!-- 写入线圈 -->
-                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                        <TextBlock Grid.Column="0" Text="地址" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBox Grid.Column="1" Text="{Binding CoilWriteAddress}" Watermark="0" />
-                        <TextBlock Grid.Column="2" Text="值" VerticalAlignment="Center" Margin="16,0,8,0" />
-                        <ToggleSwitch Grid.Column="3" IsChecked="{Binding CoilWriteValue}" 
-                                      OnContent="ON" OffContent="OFF" />
-                        <Button Grid.Column="4" Content="写入" Classes="Primary" Margin="16,0,0,0"
-                                Command="{Binding WriteSingleCoilCommand}" 
-                                IsEnabled="{Binding IsMasterConnected}" />
-                    </Grid>
-                </StackPanel>
-            </shadui:Card.Content>
-        </shadui:Card>
-
-        <!-- 主站日志卡片 -->
-        <shadui:Card>
-            <shadui:Card.Header>
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Classes="h3" Text="通信日志" />
-                        <TextBlock Classes="Muted" Text="主站通信过程中的日志记录" />
-                    </StackPanel>
-                    <Button Grid.Column="1" Content="清空" Classes="Outline" 
-                            Command="{Binding ClearMasterLogCommand}" VerticalAlignment="Center" />
-                </Grid>
-            </shadui:Card.Header>
-            <shadui:Card.Content>
-                <Border Height="150" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="8">
-                        <TextBlock Text="{Binding MasterLog}" TextWrapping="Wrap" />
-                    </ScrollViewer>
-                </Border>
-            </shadui:Card.Content>
-        </shadui:Card>
+            </TabItem>
+        </TabControl>
     </StackPanel>
 </UserControl>

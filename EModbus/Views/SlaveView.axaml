@@ -108,27 +108,6 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </shadui:Card.Content>
-        </shadui:Card>
-
-        <!-- 日志卡片 -->
-        <shadui:Card>
-            <shadui:Card.Header>
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Classes="h3" Text="运行日志" />
-                        <TextBlock Classes="Muted" Text="从站运行过程中的日志记录" />
-                    </StackPanel>
-                    <Button Grid.Column="1" Content="清空" Classes="Outline" 
-                            Command="{Binding ClearSlaveLogCommand}" VerticalAlignment="Center" />
-                </Grid>
-            </shadui:Card.Header>
-            <shadui:Card.Content>
-                <Border Height="150" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="8">
-                        <TextBlock Text="{Binding SlaveLog}" TextWrapping="Wrap" />
-                    </ScrollViewer>
-                </Border>
-            </shadui:Card.Content>
-        </shadui:Card>
+        </shadui:Card>        
     </StackPanel>
 </UserControl>

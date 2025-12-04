@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using LyuEModbus.Models;
 
 namespace EModbus.Model;
 
@@ -42,6 +43,12 @@ public partial class MasterSettings : ObservableObject
     /// </summary>
     [ObservableProperty]
     public partial byte SlaveId { get; set; } = 1;
+
+    /// <summary>
+    /// 字节序设置
+    /// </summary>
+    [ObservableProperty]
+    public partial ByteOrder ByteOrder { get; set; } = ByteOrder.ABCD;
 
     /// <summary>
     /// 读取超时（毫秒）

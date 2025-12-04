@@ -147,9 +147,6 @@ public partial class MasterViewModel(
 
             _tcpMaster = factory
                 .CreateTcpMaster("main")
-                .WithEndpoint(MasterSettings.IpAddress, MasterSettings.Port)
-                .WithSlaveId(MasterSettings.SlaveId)
-                .WithTimeout(MasterSettings.ReadTimeout, MasterSettings.WriteTimeout)
                 .OnStateChanged(state =>
                 {
                     Dispatcher.UIThread.Post(() =>
@@ -281,7 +278,7 @@ public partial class MasterViewModel(
             {
                 toastManager.ShowToast($"读取失败: {ex.Message}", type: Notification.Error);
                 return Task.CompletedTask;
-            }
+            }, retryCount: 3
         );
 
         if (dict != null)

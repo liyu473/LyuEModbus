@@ -53,7 +53,8 @@ public partial class ServiceProvider : IServiceProvider
             .Build();
     }
 
-    private static ModbusSettings ModbusSettingsFactory(IConfiguration configuration) {
+    private static ModbusSettings ModbusSettingsFactory(IConfiguration configuration)
+    {
         return configuration.GetSection("Modbus").Get<ModbusSettings>() ?? new ModbusSettings();
     }
 
@@ -62,8 +63,11 @@ public partial class ServiceProvider : IServiceProvider
         return new PageManager(this);
     }
 
-    public static EModbusFactory ModbusFactoryFactory()
+    public static EModbusFactory ModbusFactoryFactory(ModbusSettings setting)
     {
-        return new EModbusFactory(ZlogFactory.Factory);
+        return new EModbusFactory(ZlogFactory.Factory).ConfigureDefaultMaster(master =>
+        {
+            master.FromSettings(setting.Master);
+        });
     }
 }

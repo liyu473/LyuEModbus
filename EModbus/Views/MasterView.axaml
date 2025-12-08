@@ -203,6 +203,52 @@
                 </StackPanel>
             </TabItem>
 
+            <!-- Double Tab -->
+            <TabItem Header="Double">
+                <StackPanel Spacing="16" Margin="0,16,0,0">
+                    <shadui:Card>
+                        <shadui:Card.Header>
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="h3" Text="Double 读写" />
+                                <TextBlock Classes="Muted" Text="64位双精度浮点数 (占用4个寄存器)" />
+                            </StackPanel>
+                        </shadui:Card.Header>
+                        <shadui:Card.Content>
+                            <StackPanel Spacing="16">
+                                <!-- 读取 Double -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="起始地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DoubleReadAddress}" Watermark="0" />
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="数量" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding DoubleReadCount}" Watermark="1" />
+                                    <Button Grid.Row="0" Grid.Column="4" Content="读取" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding ReadDoubleCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="结果" VerticalAlignment="Center" Margin="0,8,8,0" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
+                                             Text="{Binding DoubleReadResult}" IsReadOnly="True" 
+                                             Watermark="读取结果显示在这里..." Margin="0,8,0,0" />
+                                </Grid>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" />
+
+                                <!-- 写入 Double -->
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto">
+                                    <TextBlock Grid.Column="0" Text="地址" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox Grid.Column="1" Text="{Binding DoubleWriteAddress}" Watermark="0" />
+                                    <TextBlock Grid.Column="2" Text="值" VerticalAlignment="Center" Margin="16,0,8,0" />
+                                    <TextBox Grid.Column="3" Text="{Binding DoubleWriteValue}" Watermark="0.0" />
+                                    <Button Grid.Column="4" Content="写入" Classes="Primary" Margin="16,0,0,0"
+                                            Command="{Binding WriteDoubleCommand}" 
+                                            IsEnabled="{Binding IsMasterConnected}" />
+                                </Grid>
+                            </StackPanel>
+                        </shadui:Card.Content>
+                    </shadui:Card>
+                </StackPanel>
+            </TabItem>
+
             <!-- Boolean Tab -->
             <TabItem Header="Boolean">
                 <StackPanel Spacing="16" Margin="0,16,0,0">

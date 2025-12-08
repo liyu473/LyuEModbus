@@ -107,6 +107,25 @@ public partial class MasterViewModel(
 
     #endregion
 
+    #region Double
+
+    [ObservableProperty]
+    public partial ushort DoubleReadAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial int DoubleReadCount { get; set; } = 1;
+
+    [ObservableProperty]
+    public partial string DoubleReadResult { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial ushort DoubleWriteAddress { get; set; } = 0;
+
+    [ObservableProperty]
+    public partial string DoubleWriteValue { get; set; } = "0.0";
+
+    #endregion
+
     #region 连接状态
 
     [ObservableProperty]
@@ -532,6 +551,98 @@ public partial class MasterViewModel(
                 $"写入Boolean成功: {BoolWriteValue}",
                 type: Notification.Success
             );
+    }
+
+    #endregion
+
+    #region Double Commands
+
+    [RelayCommand]
+    private async Task ReadDoubleAsync()
+    {
+        if (!IsMasterConnected || _tcpMaster == null)
+        {
+            toastManager.ShowToast("请先连接主站", type: Notification.Warning);
+            return;
+        }
+
+        if (DoubleReadCount == 1)
+        {
+            var result = await _tcpMaster.ReadDoubleAsync(
+                DoubleReadAddress,
+                onError: ex =>
+                {
+                    toastManager.ShowToast(
+                        $"读取Double失败: {ex.Message}",
+                        type: Notification.Error
+                    );
+                    return Task.CompletedTask;
+                }
+            );
+
+            if (result.HasValue)
+            {
+                DoubleReadResult = result.Value.ToString(CultureInfo.InvariantCulture);
+                toastManager.ShowToast("读取Double成功", type: Notification.Success);
+            }
+        }
+        else
+        {
+            var results = await _tcpMaster.ReadDoublesAsync(
+                DoubleReadAddress,
+                DoubleReadCount,
+                onError: ex =>
+                {
+                    toastManager.ShowToast(
+                        $"读取Double失败: {ex.Message}",
+                        type: Notification.Error
+                    );
+                    return Task.CompletedTask;
+                }
+            );
+
+            if (results != null)
+            {
+                DoubleReadResult = string.Join(", ", results);
+                toastManager.ShowToast("读取Double成功", type: Notification.Success);
+            }
+        }
+    }
+
+    [RelayCommand]
+    private async Task WriteDoubleAsync()
+    {
+        if (!IsMasterConnected || _tcpMaster == null)
+        {
+            toastManager.ShowToast("请先连接主站", type: Notification.Warning);
+            return;
+        }
+
+        if (
+            !double.TryParse(
+                DoubleWriteValue,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var value
+            )
+        )
+        {
+            toastManager.ShowToast("请输入有效的双精度浮点数", type: Notification.Warning);
+            return;
+        }
+
+        var success = await _tcpMaster.WriteDoubleAsync(
+            DoubleWriteAddress,
+            value,
+            onError: ex =>
+            {
+                toastManager.ShowToast($"写入Double失败: {ex.Message}", type: Notification.Error);
+                return Task.CompletedTask;
+            }
+        );
+
+        if (success)
+            toastManager.ShowToast($"写入Double成功: {value}", type: Notification.Success);
     }
 
     #endregion

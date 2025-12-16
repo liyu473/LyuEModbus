@@ -21,7 +21,7 @@ public class EModbusFactory : IEModbusFactory, IDisposable
     /// <summary>
     /// 默认主站配置（创建主站时自动应用）
     /// </summary>
-    public ModbusMasterOptions DefaultMasterOptions { get; } = new();
+    public ModbusMasterOptions DefaultMasterOptions { get; } = new() { Name = "__default__" };
 
     /// <summary>
     /// 默认从站配置（创建从站时自动应用）

@@ -49,7 +49,7 @@ public static class ModbusServiceExtensions
             // 创建预配置的主站
             foreach (var (name, masterConfigure) in options.MasterConfigurations)
             {
-                var masterOptions = new Models.ModbusMasterOptions();
+                var masterOptions = new Models.ModbusMasterOptions { Name = name };
                 masterConfigure(masterOptions);
                 factory.CreateTcpMaster(name, masterOptions);
             }

@@ -8,7 +8,7 @@ public class ModbusMasterOptions
     /// <summary>
     /// 主站名称（工厂的 key 值，由工厂创建时设置）
     /// </summary>
-    public string? Name { get; internal set; }
+    public required string Name { get; init; }
 
     public string? IpAddress { get; set; }
     public int? Port { get; set; }

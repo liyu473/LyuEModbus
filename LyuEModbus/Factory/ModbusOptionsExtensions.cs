@@ -12,12 +12,13 @@ internal static class ModbusOptionsExtensions
     /// <summary>
     /// 合并主站配置（overrides 覆盖 defaults 中的非空值）
     /// </summary>
-    public static ModbusMasterOptions MergeWith(this ModbusMasterOptions defaults, ModbusMasterOptions? overrides)
+    public static ModbusMasterOptions MergeWith(this ModbusMasterOptions defaults, ModbusMasterOptions? overrides, string? name = null)
     {
-        if (overrides == null) return defaults.Clone();
+        if (overrides == null) return defaults.Clone(name);
 
         return new ModbusMasterOptions
         {
+            Name = name ?? overrides.Name ?? defaults.Name,
             IpAddress = overrides.IpAddress ?? defaults.IpAddress,
             Port = overrides.Port ?? defaults.Port,
             SlaveId = overrides.SlaveId ?? defaults.SlaveId,
@@ -35,10 +36,11 @@ internal static class ModbusOptionsExtensions
     /// <summary>
     /// 克隆主站配置
     /// </summary>
-    public static ModbusMasterOptions Clone(this ModbusMasterOptions source)
+    public static ModbusMasterOptions Clone(this ModbusMasterOptions source, string? name = null)
     {
         return new ModbusMasterOptions
         {
+            Name = name ?? source.Name,
             IpAddress = source.IpAddress,
             Port = source.Port,
             SlaveId = source.SlaveId,

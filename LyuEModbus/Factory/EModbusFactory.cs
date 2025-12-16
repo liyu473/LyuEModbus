@@ -45,7 +45,7 @@ public class EModbusFactory : IEModbusFactory, IDisposable
         EnsureMasterNotExists(name);
 
         var logger = _loggerFactory.CreateLogger($"Master:{name}");
-        var mergedOptions = DefaultMasterOptions.MergeWith(options);
+        var mergedOptions = DefaultMasterOptions.MergeWith(options, name);
         var master = new ModbusTcpMaster(name, mergedOptions, logger);
 
         if (!_masters.TryAdd(name, master))

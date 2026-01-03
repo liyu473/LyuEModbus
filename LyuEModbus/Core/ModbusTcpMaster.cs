@@ -75,6 +75,9 @@ internal class ModbusTcpMaster : ModbusMasterBase
             InternalMaster.Transport.ReadTimeout = _options.ReadTimeout!.Value;
             InternalMaster.Transport.WriteTimeout = _options.WriteTimeout!.Value;
 
+            // 验证Modbus通信是否正常（读取一个寄存器）
+            await VerifyModbusCommunicationAsync(cancellationToken);
+
             _reconnectCts = null; // 连接成功，清理重连令牌
             State = ModbusConnectionState.Connected;
             Logger.Log(LoggingLevel.Information, $"已连接到 {Address}");
@@ -89,6 +92,23 @@ internal class ModbusTcpMaster : ModbusMasterBase
                 State = ModbusConnectionState.Disconnected;
             Logger.Log(LoggingLevel.Error, $"连接失败: {ex.Message}");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 验证Modbus通信是否正常
+    /// </summary>
+    private async Task VerifyModbusCommunicationAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // 尝试读取地址0的1个保持寄存器来验证通信
+            await InternalMaster!.ReadHoldingRegistersAsync(SlaveId, 0, 1);
+        }
+        catch (Exception ex)
+        {
+            CleanupConnection();
+            throw new InvalidOperationException($"Modbus通信验证失败: {ex.Message}", ex);
         }
     }
 

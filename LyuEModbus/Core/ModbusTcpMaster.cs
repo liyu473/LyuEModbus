@@ -231,6 +231,7 @@ internal class ModbusTcpMaster : ModbusMasterBase
     {
         if (State == ModbusConnectionState.Reconnecting) return;
         StopHeartbeat();
+        State = ModbusConnectionState.Disconnected; // 先设置断开状态，让轮询停止
         CleanupConnection();
         if (_options.AutoReconnect)
             await StartReconnectAsync();

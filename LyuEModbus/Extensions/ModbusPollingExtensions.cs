@@ -50,12 +50,13 @@ public static class ModbusPollingExtensions
 
             if (autoStart)
             {
-                master.StateChanged += async state =>
+                master.StateChanged += state =>
                 {
                     if (state == Models.ModbusConnectionState.Connected)
                         masterBase.Poller?.Start();
-                    else if (state == Models.ModbusConnectionState.Disconnected)
+                    else
                         masterBase.Poller?.Stop();
+                    return Task.CompletedTask;
                 };
             }
         }
@@ -99,12 +100,13 @@ public static class ModbusPollingExtensions
 
             if (autoStart)
             {
-                master.StateChanged += async state =>
+                master.StateChanged += state =>
                 {
                     if (state == Models.ModbusConnectionState.Connected)
                         masterBase.Poller?.Start();
-                    else if (state == Models.ModbusConnectionState.Disconnected)
+                    else
                         masterBase.Poller?.Stop();
+                    return Task.CompletedTask;
                 };
             }
         }
@@ -145,12 +147,13 @@ public static class ModbusPollingExtensions
 
             if (autoStart)
             {
-                master.StateChanged += async state =>
+                master.StateChanged += state =>
                 {
                     if (state == Models.ModbusConnectionState.Connected)
                         masterBase.Poller?.Start();
-                    else if (state == Models.ModbusConnectionState.Disconnected)
+                    else
                         masterBase.Poller?.Stop();
+                    return Task.CompletedTask;
                 };
             }
         }
@@ -183,12 +186,13 @@ public static class ModbusPollingExtensions
             // 默认自动启动
             if (autoStart)
             {
-                master.StateChanged += async state =>
+                master.StateChanged += state =>
                 {
                     if (state == Models.ModbusConnectionState.Connected)
                         masterBase.PollerGroup?.Start();
-                    else if (state == Models.ModbusConnectionState.Disconnected)
+                    else
                         masterBase.PollerGroup?.Stop();
+                    return Task.CompletedTask;
                 };
             }
         }

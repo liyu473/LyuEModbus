@@ -36,6 +36,16 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
     protected IModbusMaster? InternalMaster;
 
     /// <summary>
+    /// 请求同步锁，确保 Modbus 请求串行执行（NModbus 不是线程安全的）
+    /// </summary>
+    private readonly SemaphoreSlim _requestLock = new(1, 1);
+
+    /// <summary>
+    /// 获取请求锁（用于扩展方法中的同步）
+    /// </summary>
+    public SemaphoreSlim RequestLock => _requestLock;
+
+    /// <summary>
     /// 轮询器实例
     /// </summary>
     public ModbusPoller? Poller { get; internal set; }
@@ -292,6 +302,7 @@ public abstract class ModbusMasterBase(string name, IModbusLogger logger) : IMod
             Reconnecting = null;
             ReconnectFailed = null;
             Heartbeat = null;
+            _requestLock.Dispose();
         }
     }
     

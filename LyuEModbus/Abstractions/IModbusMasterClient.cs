@@ -19,6 +19,11 @@ public interface IModbusMasterClient : IModbusMaster, IModbusClient
     ModbusPollerGroup? PollerGroup { get; }
 
     /// <summary>
+    /// 请求同步锁，确保 Modbus 请求串行执行
+    /// </summary>
+    SemaphoreSlim RequestLock { get; }
+
+    /// <summary>
     /// 连接到从站
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

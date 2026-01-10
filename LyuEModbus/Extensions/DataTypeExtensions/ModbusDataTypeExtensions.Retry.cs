@@ -15,14 +15,28 @@ public static partial class ModbusDataTypeExtensions
         Func<Exception, Task>? onError,
         string operationName) where T : struct
     {
+        var masterClient = client as IModbusMasterClient;
+        var requestLock = masterClient?.RequestLock;
+        
         var attempts = 0;
         while (true)
         {
             try
             {
-                var result = await action();
-                client.Log(ModbusLogLevel.Debug, $"{operationName} 成功: {result}");
-                return result;
+                // 获取请求锁，确保串行执行
+                if (requestLock != null)
+                    await requestLock.WaitAsync();
+                
+                try
+                {
+                    var result = await action();
+                    client.Log(ModbusLogLevel.Debug, $"{operationName} 成功: {result}");
+                    return result;
+                }
+                finally
+                {
+                    requestLock?.Release();
+                }
             }
             catch (Exception ex)
             {
@@ -47,14 +61,28 @@ public static partial class ModbusDataTypeExtensions
         Func<Exception, Task>? onError,
         string operationName) where T : class
     {
+        var masterClient = client as IModbusMasterClient;
+        var requestLock = masterClient?.RequestLock;
+        
         var attempts = 0;
         while (true)
         {
             try
             {
-                var result = await action();
-                client.Log(ModbusLogLevel.Debug, $"{operationName} 成功");
-                return result;
+                // 获取请求锁，确保串行执行
+                if (requestLock != null)
+                    await requestLock.WaitAsync();
+                
+                try
+                {
+                    var result = await action();
+                    client.Log(ModbusLogLevel.Debug, $"{operationName} 成功");
+                    return result;
+                }
+                finally
+                {
+                    requestLock?.Release();
+                }
             }
             catch (Exception ex)
             {
@@ -79,14 +107,28 @@ public static partial class ModbusDataTypeExtensions
         Func<Exception, Task>? onError,
         string operationName)
     {
+        var masterClient = client as IModbusMasterClient;
+        var requestLock = masterClient?.RequestLock;
+        
         var attempts = 0;
         while (true)
         {
             try
             {
-                await action();
-                client.Log(ModbusLogLevel.Debug, $"{operationName} 成功");
-                return true;
+                // 获取请求锁，确保串行执行
+                if (requestLock != null)
+                    await requestLock.WaitAsync();
+                
+                try
+                {
+                    await action();
+                    client.Log(ModbusLogLevel.Debug, $"{operationName} 成功");
+                    return true;
+                }
+                finally
+                {
+                    requestLock?.Release();
+                }
             }
             catch (Exception ex)
             {

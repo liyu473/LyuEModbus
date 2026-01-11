@@ -43,7 +43,7 @@ public static class ModbusPollingExtensions
                     dict[(ushort)(startAddress + i)] = result[i];
 
                 await onData(dict);
-            }, intervalMs);
+            }, intervalMs, master);
 
             if (onError != null)
                 masterBase.Poller.OnError += onError;
@@ -93,7 +93,7 @@ public static class ModbusPollingExtensions
                     dict[(ushort)(startAddress + i)] = result[i];
 
                 await onData(dict);
-            }, intervalMs);
+            }, intervalMs, master);
 
             if (onError != null)
                 masterBase.Poller.OnError += onError;
@@ -140,7 +140,7 @@ public static class ModbusPollingExtensions
             {
                 if (!master.IsConnected) return;
                 await pollAction(master);
-            }, intervalMs);
+            }, intervalMs, master);
 
             if (onError != null)
                 masterBase.Poller.OnError += onError;
@@ -233,7 +233,7 @@ public static class ModbusPollingExtensions
                 dict[(ushort)(startAddress + i)] = result[i];
 
             await onData(dict);
-        }, intervalMs);
+        }, intervalMs, master);
 
         if (onError != null)
             poller.OnError += onError;
@@ -254,7 +254,7 @@ public static class ModbusPollingExtensions
         {
             if (!master.IsConnected) return;
             await pollAction(master);
-        }, intervalMs);
+        }, intervalMs, master);
 
         if (onError != null)
             poller.OnError += onError;

@@ -660,6 +660,8 @@ public class ModbusPollerGroup : IDisposable
 
     private async Task RunLoopAsync(CancellationToken ct)
     {
+        var requestLock = _master.RequestLock;
+        
         while (!ct.IsCancellationRequested)
         {
             try
@@ -688,8 +690,18 @@ public class ModbusPollerGroup : IDisposable
 
                     try
                     {
-                        await task.Action(ct);
-                        task.LastExecuted = DateTime.UtcNow;
+                        // 获取请求锁，确保轮询串行执行
+                        await requestLock.WaitAsync(ct);
+                        
+                        try
+                        {
+                            await task.Action(ct);
+                            task.LastExecuted = DateTime.UtcNow;
+                        }
+                        finally
+                        {
+                            requestLock.Release();
+                        }
                     }
                     catch (OperationCanceledException)
                     {

@@ -1,3 +1,5 @@
+using LyuEModbus.Abstractions;
+
 namespace LyuEModbus.Core;
 
 /// <summary>
@@ -7,6 +9,7 @@ public class ModbusPoller : IDisposable
 {
     private readonly Func<CancellationToken, Task> _pollAction;
     private readonly int _intervalMs;
+    private readonly IModbusMasterClient? _master;
     private CancellationTokenSource? _cts;
     private readonly SemaphoreSlim _pauseSemaphore = new(1, 1); // 用于暂停/继续控制
     private Task? _pollTask;
@@ -32,10 +35,11 @@ public class ModbusPoller : IDisposable
     /// </summary>
     public const int MinIntervalMs = 10;
 
-    internal ModbusPoller(Func<CancellationToken, Task> pollAction, int intervalMs)
+    internal ModbusPoller(Func<CancellationToken, Task> pollAction, int intervalMs, IModbusMasterClient? master = null)
     {
         _pollAction = pollAction ?? throw new ArgumentNullException(nameof(pollAction));
         _intervalMs = Math.Max(MinIntervalMs, intervalMs); // 强制最小间隔，防止 CPU 占满
+        _master = master;
     }
 
     /// <summary>
@@ -96,6 +100,8 @@ public class ModbusPoller : IDisposable
 
     private async Task RunPollLoopAsync(CancellationToken ct)
     {
+        var requestLock = _master?.RequestLock;
+        
         while (!ct.IsCancellationRequested)
         {
             try
@@ -104,8 +110,19 @@ public class ModbusPoller : IDisposable
                 await _pauseSemaphore.WaitAsync(ct);
                 _pauseSemaphore.Release(); // 立即释放，允许下一轮
 
-                // 执行轮询
-                await _pollAction(ct);
+                // 获取请求锁，确保轮询串行执行
+                if (requestLock != null)
+                    await requestLock.WaitAsync(ct);
+                
+                try
+                {
+                    // 执行轮询
+                    await _pollAction(ct);
+                }
+                finally
+                {
+                    requestLock?.Release();
+                }
 
                 // 等待间隔
                 await Task.Delay(_intervalMs, ct);
